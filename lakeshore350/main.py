@@ -8,13 +8,13 @@ import serial
 from .temperature import TemperatureReader
 
 def main():
-    parser = argparse.ArgumentParser(description="Lake Shore 350 Temperature Reader")
+    parser = argparse.ArgumentParser(description="Lakeshore 350 Temperature Controller")
     parser.add_argument("--port", default="/dev/ttyUSB0", help="Serial port (default: /dev/ttyUSB0)")
     parser.add_argument("--input", help="Read specific input (A, B, C, D)")
-    parser.add_argument("--channel", type=int, help="Read specific channel (1-8)")
+    parser.add_argument("--channel", type=int, help="Read specific channel (2-5)")
     parser.add_argument("--channels", nargs='+', type=int, help="Read multiple channels (e.g., --channels 2 3 4 5)")
     parser.add_argument("--all-inputs", action="store_true", help="Read all sensor inputs (A, B, C, D)")
-    parser.add_argument("--all", action="store_true", help="Read all inputs and channels 1-8")
+    parser.add_argument("--all", action="store_true", help="Read all inputs and channels 2-5")
     parser.add_argument("--info", action="store_true", help="Get device information")
     
     args = parser.parse_args()
@@ -85,7 +85,7 @@ def main():
     
     except serial.SerialException as e:
         print(f"Serial connection error: {e}")
-        print("Make sure the Lake Shore 350 is connected and the port is correct.")
+        print("Make sure the Lakeshore 350 is connected and the port is correct.")
     except KeyboardInterrupt:
         print("\nInterrupted by user")
     except Exception as e:
