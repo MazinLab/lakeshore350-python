@@ -7,6 +7,7 @@ import argparse
 import serial
 from .temperature import TemperatureReader
 from .query_heaters import HeaterController
+from .gl7_control import GL7Controller
 
 def main():
     parser = argparse.ArgumentParser(description="Lakeshore 350 Temperature Controller")
@@ -25,17 +26,21 @@ def main():
     parser.add_argument("--query-all-analogs", action="store_true", help="Query both analog heaters/switches (GL7 heat switches)")
     parser.add_argument("--query-all-heaters", action="store_true", help="Query all heaters (relays + analog outputs)")
     
+    # GL7 automation arguments
+    parser.add_argument("--start-gl7-test", action="store_true", help="Start GL7 sorption cooler TEST sequence (SIMULATION - no heaters activated)")
+    
     args = parser.parse_args()
     
     # If no specific action requested, default to reading all inputs
     if not any([args.input, args.channel, args.channels, args.all_inputs, args.all, args.info,
                 args.query_relay, args.query_analog, args.query_all_relays, 
-                args.query_all_analogs, args.query_all_heaters]):
+                args.query_all_analogs, args.query_all_heaters, args.start_gl7_test]):
         args.all_inputs = True
     
     try:
         temp_reader = TemperatureReader(port=args.port)
         heater_controller = HeaterController(temp_reader.send_command)
+        gl7_controller = GL7Controller(temp_reader.send_command)
         
         if args.info:
             print("Device Information:")
@@ -160,6 +165,23 @@ def main():
                 if 'analog_heater' in name:
                     output_num = result['output_number']
                     print(f"    Analog {output_num}: {result['config_raw']}")
+        
+        # GL7 automation sequence (test/simulation mode)
+        if args.start_gl7_test:
+            print("Starting GL7 Sorption Cooler TEST Sequence...")
+            print("NOTE: This is TEST/SIMULATION mode - no heaters will be activated")
+            print("Stage Temperatures Don't Accurately Reflect Listed Channels/Inputs")
+            print("Press Ctrl+C to abort at any time\n")
+            
+            try:
+                success = gl7_controller.start_gl7_sequence()
+                if success:
+                    print("\nGL7 test sequence completed successfully!")
+                else:
+                    print("\nGL7 test sequence stopped due to safety conditions")
+            except KeyboardInterrupt:
+                print("\n\nGL7 test sequence aborted by user")
+                print("All systems remain in their current state")
     
     except serial.SerialException as e:
         print(f"Serial connection error: {e}")
