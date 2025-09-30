@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lakeshore350"
 version = "0.1.0"
-description = "Python driver for Lake Shore Cryotronics Model 350 Temperature Controller"
+description = "Simple Python interface for Lake Shore 350 Temperature Controller"
 authors = [
     { name = "Nikki Zivkov", email = "nzivkov@ucsb.edu" }
 ]
@@ -19,4 +19,4 @@ dependencies = [
 Homepage = "https://github.com/MazinLab/lakeshore350-python"
 
 [project.scripts]
-lakeshore350 = "lakeshore350.main:main"
+lakeshore350 = "lakeshore350_simple:main"
