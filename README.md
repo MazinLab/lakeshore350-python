@@ -1,6 +1,6 @@
 # Lake Shore 350 Python Interface
 
-Python interface for reading temperatures from the Lake Shore 350 Temperature Controller.
+Python interface for reading temperatures from the Lakeshore 350 Temperature Controller.
 
 ** Repo still in progress, no heater capability yet 
 
