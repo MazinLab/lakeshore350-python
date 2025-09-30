@@ -7,6 +7,7 @@ Designed to be extensible for future relay and output control.
 """
 
 from .temperature import TemperatureReader
+from .query_heaters import HeaterController
 
 __version__ = "0.2.0"
-__all__ = ["TemperatureReader"]
+__all__ = ["TemperatureReader", "HeaterController"]
