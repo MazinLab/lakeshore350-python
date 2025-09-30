@@ -43,7 +43,7 @@ class LakeShore350:
         """
         Read temperature from a specific input or channel
         Inputs: A, B, C, D (temperature sensor inputs)
-        Channels: 1, 2, 3, 4, 5, 6, 7, 8 (can be used for control loops)
+        Channels: 2, 3, 4, 5 
         """
         # Map letter inputs to numbers for KRDG command
         input_map = {'A': 1, 'B': 2, 'C': 3, 'D': 4}
