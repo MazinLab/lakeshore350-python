@@ -1,12 +1,16 @@
 # Lake Shore 350 Python Interface
 
-A simple Python interface for reading temperatures from the Lake Shore 350 Temperature Controller.
+Python interface for reading temperatures from the Lake Shore 350 Temperature Controller.
+
+** Repo still in progress, no heater capability yet 
 
 ## Installation
 
 Clone this repository and install:
 ```bash
 git clone https://github.com/MazinLab/lakeshore350-python
+python3 -m venv lakeshore350-env
+source lakeshore350-env/bin/activate  
 cd lakeshore350-python
 pip install -e .
 ```
@@ -15,7 +19,7 @@ pip install -e .
 
 ### Command Line
 
-Read all channels:
+Read all channels and inputs:
 ```bash
 lakeshore350 --all
 ```
@@ -25,44 +29,26 @@ Read a specific channel:
 lakeshore350 --channel A
 ```
 
+
+Read a specific input:
+```bash
+lakeshore350 --input 2
+```
+
 Get device information:
 ```bash
 lakeshore350 --info
 ```
 
-### Python Script
-
-```python
-from lakeshore350_simple import LakeShore350
-
-# Connect to device
-ls = LakeShore350("/dev/ttyUSB0")
-
-# Read channel A
-temp_a = ls.read_temperature("A")
-print(f"Channel A: {temp_a}")
-
-# Read all channels
-all_temps = ls.read_all_temperatures()
-for channel, temp in all_temps.items():
-    print(f"Channel {channel}: {temp}")
-
-# Close connection
-ls.close()
+Get list of available commands:
+```bash
+lakeshore350 --help
 ```
-
-## Features
-
-- Reads temperature from channels A, B, C, D
-- Handles over-range conditions (displays "T_OVER")
-- Simple command-line interface
-- Handles communication errors gracefully
-
 ## Requirements
 
 - Python 3.7+
 - pyserial
-- Lake Shore 350 connected via USB serial  
+- Lake Shore 350 connected via USB serial
 
 
 
