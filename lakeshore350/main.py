@@ -29,12 +29,24 @@ def main():
     # GL7 automation arguments
     parser.add_argument("--start-gl7-test", action="store_true", help="Start GL7 sorption cooler TEST sequence (SIMULATION - no heaters activated)")
     
+    # Individual GL7 step arguments  
+    parser.add_argument("--gl7-step1", action="store_true", help="Execute GL7 Step 1: Initial Status Check")
+    parser.add_argument("--gl7-step2a", action="store_true", help="Execute GL7 Step 2A: Pre-cooling Phase")
+    parser.add_argument("--gl7-step2b", action="store_true", help="Execute GL7 Step 2B: Heat Switch Status Verification")
+    parser.add_argument("--gl7-step3", action="store_true", help="Execute GL7 Step 3: Pump Heating Phase")
+    parser.add_argument("--gl7-step4", action="store_true", help="Execute GL7 Step 4: 4He Pump Transition")
+    parser.add_argument("--gl7-step5", action="store_true", help="Execute GL7 Step 5: Cooling to 2K and 3He Pump Transition")
+    parser.add_argument("--gl7-step6", action="store_true", help="Execute GL7 Step 6: Final Cooldown Monitoring")
+    parser.add_argument("--gl7-step7", action="store_true", help="Execute GL7 Step 7: Final Status Check")
+    
     args = parser.parse_args()
     
     # If no specific action requested, default to reading all inputs
     if not any([args.input, args.channel, args.channels, args.all_inputs, args.all, args.info,
                 args.query_relay, args.query_analog, args.query_all_relays, 
-                args.query_all_analogs, args.query_all_heaters, args.start_gl7_test]):
+                args.query_all_analogs, args.query_all_heaters, args.start_gl7_test,
+                args.gl7_step1, args.gl7_step2a, args.gl7_step2b, args.gl7_step3,
+                args.gl7_step4, args.gl7_step5, args.gl7_step6, args.gl7_step7]):
         args.all_inputs = True
     
     try:
@@ -182,6 +194,79 @@ def main():
             except KeyboardInterrupt:
                 print("\n\nGL7 test sequence aborted by user")
                 print("All systems remain in their current state")
+        
+        # Individual GL7 step execution
+        if args.gl7_step1:
+            print("Executing GL7 Step 1: Initial Status Check")
+            print("=" * 50)
+            try:
+                result = gl7_controller.execute_step1()
+                print(f"Step 1 completed: {result}")
+            except KeyboardInterrupt:
+                print("\nStep 1 aborted by user")
+        
+        if args.gl7_step2a:
+            print("Executing GL7 Step 2A: Pre-cooling Phase")
+            print("=" * 50)
+            try:
+                result = gl7_controller.execute_step2a()
+                print(f"Step 2A completed. Heads at 10K: {result}")
+            except KeyboardInterrupt:
+                print("\nStep 2A aborted by user")
+        
+        if args.gl7_step2b:
+            print("Executing GL7 Step 2B: Heat Switch Status Verification")
+            print("=" * 50)
+            try:
+                result = gl7_controller.execute_step2b()
+                print(f"Step 2B completed. Heads ready: {result}")
+            except KeyboardInterrupt:
+                print("\nStep 2B aborted by user")
+        
+        if args.gl7_step3:
+            print("Executing GL7 Step 3: Pump Heating Phase")
+            print("=" * 50)
+            try:
+                result = gl7_controller.execute_step3()
+                print(f"Step 3 completed. Heads at 4K: {result}")
+            except KeyboardInterrupt:
+                print("\nStep 3 aborted by user")
+        
+        if args.gl7_step4:
+            print("Executing GL7 Step 4: 4He Pump Transition")
+            print("=" * 50)
+            try:
+                result = gl7_controller.execute_step4()
+                print(f"Step 4 completed. Heads ready for transition: {result}")
+            except KeyboardInterrupt:
+                print("\nStep 4 aborted by user")
+        
+        if args.gl7_step5:
+            print("Executing GL7 Step 5: Cooling to 2K and 3He Pump Transition")
+            print("=" * 50)
+            try:
+                result = gl7_controller.execute_step5()
+                print(f"Step 5 completed. Targets at 2K: {result}")
+            except KeyboardInterrupt:
+                print("\nStep 5 aborted by user")
+        
+        if args.gl7_step6:
+            print("Executing GL7 Step 6: Final Cooldown Monitoring")
+            print("=" * 50)
+            try:
+                result = gl7_controller.execute_step6()
+                print(f"Step 6 completed. Final 4He Head temp: {result}")
+            except KeyboardInterrupt:
+                print("\nStep 6 aborted by user")
+        
+        if args.gl7_step7:
+            print("Executing GL7 Step 7: Final Status Check")
+            print("=" * 50)
+            try:
+                result = gl7_controller.execute_step7()
+                print(f"Step 7 completed. GL7 Running: {result}")
+            except KeyboardInterrupt:
+                print("\nStep 7 aborted by user")
     
     except serial.SerialException as e:
         print(f"Serial connection error: {e}")

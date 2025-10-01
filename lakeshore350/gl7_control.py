@@ -7,6 +7,10 @@ Stage Temperatures Don't Accurately Reflect Listed Channels/Inputs
 """
 
 import time
+from .gl7 import (
+    execute_step1, execute_step2a, execute_step2b, execute_step3,
+    execute_step4, execute_step5, execute_step6, execute_step7
+)
 
 class GL7Controller:
     def __init__(self, send_command_func):
@@ -45,7 +49,7 @@ class GL7Controller:
     
     def start_gl7_sequence(self):
         """
-        Complete GL7 sorption cooler startup sequence - CORRECTED VERSION
+        Complete GL7 sorption cooler startup sequence - MODULAR VERSION
         Based on GL7 manual section 6.1 and 6.2
         NOTE: All heater commands are commented out for safety
         """
@@ -56,227 +60,15 @@ class GL7Controller:
         print("NOTE: All heater activation commands are COMMENTED OUT for safety")
         print("This is a simulation showing the correct process flow\n")
         
-        # Stage 1: Initial Status Check
-        print("STAGE 1: INITIAL STATUS CHECK")
-        print("-" * 30)
-        
-        # Check starting temperatures
-        temp_4k = self.read_temperature('A')  # 4K stage
-        temp_1k = self.read_temperature('B')  # 1K stage  
-        temp_100mk = self.read_temperature('C')  # 100mK stage
-        
-        print(f"4K Stage Temperature (Input A): {temp_4k} K")
-        print(f"1K Stage Temperature (Input B): {temp_1k} K") 
-        print(f"100mK Stage Temperature (Input C): {temp_100mk} K")
-        
-        # Check current heater/switch status
-        print("\nCurrent Heater/Switch Status:")
-        for relay_num, name in self.relay_pump_heaters.items():
-            config, status = self.query_relay_status(relay_num)
-            print(f"  {name} (Relay {relay_num}): Config={config}, Status={status}")
-        
-        for output_num, name in self.analog_heat_switches.items():
-            config = self.query_analog_status(output_num)
-            print(f"  {name} (Analog {output_num}): Config={config}")
-        
-        print("\n")
-        time.sleep(2)
-        
-        # Stage 2: Pre-cooling Phase (Room Temp to 4K)
-        print("STAGE 2: PRE-COOLING PHASE (Room Temperature → 4K)")
-        print("-" * 50)
-        print("Manual: 'Pre-cool from room temperature to ~4K'")
-        print("Waiting for dilution refrigerator to cool down...")
-        
-        # Monitor cooling progression
-        print("Monitoring pre-cooling progression...")
-        for check in range(1, 4):
-            temp_4k = self.read_temperature('A')
-            print(f"  Check {check}: 4K Stage = {temp_4k} K")
-            
-            if isinstance(temp_4k, float):
-                if temp_4k > 50:
-                    print("    → Still warming up from room temperature")
-                elif temp_4k > 10:
-                    print("    → Cooling down, approaching heat switch transition")
-                elif temp_4k <= 10:
-                    print("    ✓ Heat switches will turn OFF (< 10K)")
-                    break
-            time.sleep(1)
-        
-        print("\n")
-        
-        # Stage 3: Heat Switch Transition (< 10K)
-        print("STAGE 3: HEAT SWITCH TRANSITION (< 10K)")
-        print("-" * 40)
-        print("Manual: 'During pre-cooling, when both heat switches turn OFF (< 10K)'")
-        print("Heat switches automatically turn OFF when temperature < 10K")
-        
-        # Check if we're at the transition point
-        temp_4k = self.read_temperature('A')
-        if isinstance(temp_4k, float) and temp_4k <= 10:
-            print(f"✓ Current temperature ({temp_4k} K) < 10K")
-            print("✓ Heat switches have turned OFF automatically")
-            print("→ Ready to activate pump heaters")
-        else:
-            print(f"Current temperature: {temp_4k} K")
-            print("Waiting for temperature < 10K...")
-        
-        print("\n")
-        time.sleep(2)
-        
-        # Stage 4: Pump Heating Phase (45-55K)
-        print("STAGE 4: PUMP HEATING PHASE")
-        print("-" * 30)
-        print("Manual: 'heat both pumps to around 45-55K and keep them at that temperature'")
-        print("Manual: 'until the heads cool to ~4K and their temperature stabilises'")
-        
-        # Activate both pump heaters
-        print("Activating BOTH pump heaters to 45-55K:")
-        
-        print(f"  Starting {self.relay_pump_heaters[1]} (Relay 1):")
-        print("    Command would be: RELAY 1,1  # Turn ON 4He pump heater")
-        # COMMENTED OUT: self.send_command("RELAY 1,1")
-        print("    → 4He pump heating to 45-55K")
-        
-        print(f"  Starting {self.relay_pump_heaters[2]} (Relay 2):")
-        print("    Command would be: RELAY 2,1  # Turn ON 3He pump heater") 
-        # COMMENTED OUT: self.send_command("RELAY 2,1")
-        print("    → 3He pump heating to 45-55K")
-        
-        print("\nBoth pumps now heating - waiting for 4K stage to stabilize...")
-        
-        # Monitor cooling to 4K while pumps are heated
-        for minute in range(1, 6):
-            temp_4k = self.read_temperature('A')
-            temp_1k = self.read_temperature('B')
-            print(f"  Minute {minute}: 4K Stage = {temp_4k} K, 1K Stage = {temp_1k} K")
-            print(f"              Pumps maintained at 45-55K")
-            
-            if isinstance(temp_4k, float) and temp_4k <= 4.0:
-                print("    ✓ 4K stage has reached ~4K and is stabilizing")
-                break
-            time.sleep(1)
-        
-        print("\n")
-        time.sleep(2)
-        
-        # Stage 5: 4He Pump Transition
-        print("STAGE 5: 4He PUMP TRANSITION")
-        print("-" * 30)
-        print("Manual: 'Turn OFF the 4-pump heat and turn ON the 4-switch'")
-        
-        # Turn off 4He pump heater
-        print(f"Turning OFF {self.relay_pump_heaters[1]}:")
-        print("  Command would be: RELAY 1,0  # Turn OFF 4He pump heater")
-        # COMMENTED OUT: self.send_command("RELAY 1,0")
-        print("  → 4He pump heater DEACTIVATED")
-        
-        time.sleep(1)
-        
-        # Turn on 4He heat switch
-        print(f"Turning ON {self.analog_heat_switches[3]}:")
-        print("  Command would be: ANALOG 3,1,1,5.0,0.0,0  # Turn ON 4He switch (5V)")
-        # COMMENTED OUT: self.send_command("ANALOG 3,1,1,5.0,0.0,0")
-        print("  → 4He heat switch ACTIVATED (5V)")
-        print("  → Heads will cool rapidly below 1K")
-        
-        print("\n")
-        time.sleep(2)
-        
-        # Stage 6: Cooling to 2K
-        print("STAGE 6: COOLING TO < 2K")
-        print("-" * 25)
-        print("Manual: 'When the heads have cooled to less than 2K'")
-        print("Monitoring head temperatures...")
-        
-        for check in range(1, 4):
-            temp_4k = self.read_temperature('A')
-            temp_1k = self.read_temperature('B')
-            print(f"  Check {check}: 4K Stage = {temp_4k} K, 1K Stage = {temp_1k} K")
-            
-            if isinstance(temp_1k, float) and temp_1k <= 2.0:
-                print("    ✓ Heads have cooled to < 2K")
-                break
-            elif isinstance(temp_1k, float):
-                print(f"    → Still cooling (1K stage at {temp_1k:.2f} K)")
-            time.sleep(1)
-        
-        print("\n")
-        time.sleep(2)
-        
-        # Stage 7: 3He Pump Transition
-        print("STAGE 7: 3He PUMP TRANSITION")
-        print("-" * 30)
-        print("Manual: 'turn OFF the 3-pump heater and turn ON the 3-switch'")
-        
-        # Turn off 3He pump heater
-        print(f"Turning OFF {self.relay_pump_heaters[2]}:")
-        print("  Command would be: RELAY 2,0  # Turn OFF 3He pump heater")
-        # COMMENTED OUT: self.send_command("RELAY 2,0")
-        print("  → 3He pump heater DEACTIVATED")
-        
-        time.sleep(1)
-        
-        # Turn on 3He heat switch
-        print(f"Turning ON {self.analog_heat_switches[4]}:")
-        print("  Command would be: ANALOG 4,1,1,5.0,0.0,0  # Turn ON 3He switch (5V)")
-        # COMMENTED OUT: self.send_command("ANALOG 4,1,1,5.0,0.0,0")
-        print("  → 3He heat switch ACTIVATED (5V)")
-        print("  → Final cooldown to ~300mK begins")
-        
-        print("\n")
-        time.sleep(2)
-        
-        # Stage 8: Final Cooldown Monitoring
-        print("STAGE 8: FINAL COOLDOWN TO ~300mK")
-        print("-" * 35)
-        print("Monitoring final temperature progression...")
-        
-        for cycle in range(1, 4):
-            temp_4k = self.read_temperature('A')
-            temp_1k = self.read_temperature('B')
-            temp_100mk = self.read_temperature('C')
-            
-            print(f"  Cycle {cycle}:")
-            print(f"    4K Stage: {temp_4k} K")
-            print(f"    1K Stage: {temp_1k} K")
-            print(f"    100mK Stage: {temp_100mk} K")
-            
-            if isinstance(temp_100mk, float) and temp_100mk < 0.5:
-                print("    ✓ Approaching 300mK target!")
-                break
-            elif isinstance(temp_100mk, float):
-                print(f"    → Cooling toward 300mK target")
-            time.sleep(1)
-        
-        print("\n")
-        
-        # Stage 9: Final Status
-        print("STAGE 9: FINAL STATUS CHECK")
-        print("-" * 30)
-        
-        # Final temperature readings
-        temp_4k = self.read_temperature('A')
-        temp_1k = self.read_temperature('B')
-        temp_100mk = self.read_temperature('C')
-        
-        print("Final Temperatures:")
-        print(f"  4K Stage (Input A): {temp_4k} K")
-        print(f"  1K Stage (Input B): {temp_1k} K") 
-        print(f"  100mK Stage (Input C): {temp_100mk} K")
-        
-        # Final heater/switch status
-        print("\nFinal Heater/Switch Status:")
-        for relay_num, name in self.relay_pump_heaters.items():
-            config, status = self.query_relay_status(relay_num)
-            expected = "OFF" if relay_num in [1, 2] else "Current Status"
-            print(f"  {name}: {status} (should be OFF)")
-        
-        for output_num, name in self.analog_heat_switches.items():
-            config = self.query_analog_status(output_num)
-            expected = "ON" if output_num in [3, 4] else "Current Status"
-            print(f"  {name}: Config={config} (should be ON)")
+        # Execute all steps in sequence
+        execute_step1(self)
+        execute_step2a(self)
+        execute_step2b(self)
+        execute_step3(self)
+        execute_step4(self)
+        execute_step5(self)
+        execute_step6(self)
+        execute_step7(self)
         
         print("\n" + "=" * 60)
         print("GL7 STARTUP SEQUENCE SIMULATION COMPLETE")
@@ -292,3 +84,36 @@ class GL7Controller:
         print("To enable actual control, uncomment the send_command() calls")
         
         return True
+    
+    # Individual step execution methods for manual control
+    def execute_step1(self):
+        """Execute GL7 Step 1: Initial Status Check"""
+        return execute_step1(self)
+    
+    def execute_step2a(self):
+        """Execute GL7 Step 2A: Pre-cooling Phase"""
+        return execute_step2a(self)
+    
+    def execute_step2b(self):
+        """Execute GL7 Step 2B: Heat Switch Status Verification"""
+        return execute_step2b(self)
+    
+    def execute_step3(self):
+        """Execute GL7 Step 3: Pump Heating Phase"""
+        return execute_step3(self)
+    
+    def execute_step4(self):
+        """Execute GL7 Step 4: 4He Pump Transition"""
+        return execute_step4(self)
+    
+    def execute_step5(self):
+        """Execute GL7 Step 5: Cooling to 2K and 3He Pump Transition"""
+        return execute_step5(self)
+    
+    def execute_step6(self):
+        """Execute GL7 Step 6: Final Cooldown Monitoring"""
+        return execute_step6(self)
+    
+    def execute_step7(self):
+        """Execute GL7 Step 7: Final Status Check"""
+        return execute_step7(self)
