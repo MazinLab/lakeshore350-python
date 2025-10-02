@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+"""
+GL7 Step 3: Pump Heating Phase
+"""
+
+import time
+
+def execute_step3_test(gl7_controller):
+    """Execute GL7 Step 3: Pump Heating Phase (45-55K)"""
+    print("GL7 STEP 3: PUMP HEATING PHASE")
+    print("-" * 35)
+    print("Confirm fridge is ~10K and both switches are OFF before proceeding...")
+    
+    # User confirmation before starting heaters
+    input("\nPress ENTER when ready to start 4-pump heater...")
+    
+    print(f"  Starting 4-pump Heater (Heater Output 1):")
+    # COMMENTED OUT: gl7_controller.send_command("OUTMODE 1,3,0,0")
+    # COMMENTED OUT: gl7_controller.send_command("MOUT 1,75.0")
+    print("    → 4-pump Heater at 75% power")
+    
+    # Wait for user confirmation before starting second heater
+    input("\nPress ENTER when ready to start 3-pump heater...")
+    
+    print(f"  Starting 3-pump Heater (Heater Output 2):")
+    # COMMENTED OUT: gl7_controller.send_command("OUTMODE 2,3,0,0")
+    # COMMENTED OUT: gl7_controller.send_command("MOUT 2,75.0")
+    print("    → 3-pump Heater at 75% power")
+    
+    print("\nBoth pumps now heating...")
+    print("Waiting for 3-head (Input A) and 4-head (Input C) to reach 4K...")
+    
+    # Single temperature check for demonstration
+    print(f"\nTemperature Check:")
+    
+    # Read head thermometers
+    temp_3he_head = gl7_controller.read_temperature('A')  # 3-head
+    temp_4he_head = gl7_controller.read_temperature('C')  # 4-head
+    
+    print(f"  3-head Temperature (Input A): {temp_3he_head} K")
+    print(f"  4-head Temperature (Input C): {temp_4he_head} K")
+    
+    # Also read stage temperatures
+    temp_channel_2 = gl7_controller.send_command("KRDG? 2")  # 4K stage
+    temp_channel_3 = gl7_controller.send_command("KRDG? 3")  # 50K stage
+    temp_input_b = gl7_controller.read_temperature('B')       # Device stage
+    
+    try:
+        if temp_channel_2 and temp_channel_2 != "T_OVER":
+            temp_4k_stage = float(temp_channel_2)
+        else:
+            temp_4k_stage = temp_channel_2
+    except ValueError:
+        temp_4k_stage = temp_channel_2
+        
+    try:
+        if temp_channel_3 and temp_channel_3 != "T_OVER":
+            temp_50k_stage = float(temp_channel_3)
+        else:
+            temp_50k_stage = temp_channel_3
+    except ValueError:
+        temp_50k_stage = temp_channel_3
+    
+    print(f"  4K Stage Temperature (Channel 2): {temp_4k_stage} K")
+    print(f"  50K Stage Temperature (Channel 3): {temp_50k_stage} K")
+    print(f"  Device Stage Temperature (Input B): {temp_input_b} K")
+    
+    # Check if heads have reached 4K (for assessment logic only)
+    heads_at_4k = []
+    if isinstance(temp_3he_head, float) and temp_3he_head <= 4.0:
+        heads_at_4k.append("3He")
+    if isinstance(temp_4he_head, float) and temp_4he_head <= 4.0:
+        heads_at_4k.append("4-head")
+
+    
+    # Check current heater status
+    print("\nHeater Status:")
+    mode_1, output_1 = gl7_controller.query_heater_output_status(1)
+    try:
+        output_1_val = float(output_1) if output_1 and output_1 != "NO_RESPONSE" else 0.0
+        print(f"  4-pump Heater (Output 1): Mode={mode_1}, Output={output_1_val}%")
+    except (ValueError, TypeError):
+        print(f"  4-pump Heater (Output 1): Mode={mode_1}, Output={output_1}")
+    
+    mode_2, output_2 = gl7_controller.query_heater_output_status(2)
+    try:
+        output_2_val = float(output_2) if output_2 and output_2 != "NO_RESPONSE" else 0.0
+        print(f"  3-pump Heater (Output 2): Mode={mode_2}, Output={output_2_val}%")
+    except (ValueError, TypeError):
+        print(f"  3-pump Heater (Output 2): Mode={mode_2}, Output={output_2}")
+    
+    print("→ Ready to proceed to 4-pump Heater transition")
+    
+    # User confirmation before proceeding to Step 4
+    input("\nPress ENTER to confirm heads have reached 4K and proceed to Step 4, 4-pump Transition ...")

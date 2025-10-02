@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+"""
+GL7 Step 1: Initial Status Check
+"""
+
+import time
+
+def execute_step1_test(gl7_controller):
+    """Execute GL7 Step 1: Initial Status Check"""
+    print("GL7 STEP 1: INITIAL STATUS CHECK")
+    print("-" * 35)
+    
+    # Check starting temperatures at specific measurement points
+    # 3He Head temperature (Input A)
+    temp_3he_head = gl7_controller.read_temperature('A')
+    
+    # 4He Head temperature (Input C)
+    temp_4he_head = gl7_controller.read_temperature('C')
+    
+    # 4K stage temperature (Channel 2)
+    temp_channel_2 = gl7_controller.send_command("KRDG? 2")
+    try:
+        if temp_channel_2 and temp_channel_2 != "T_OVER":
+            temp_4k_val = float(temp_channel_2)
+        else:
+            temp_4k_val = temp_channel_2
+    except ValueError:
+        temp_4k_val = temp_channel_2
+    
+    # 50K stage temperature (Channel 3)
+    temp_channel_3 = gl7_controller.send_command("KRDG? 3")
+    try:
+        if temp_channel_3 and temp_channel_3 != "T_OVER":
+            temp_50k_val = float(temp_channel_3)
+        else:
+            temp_50k_val = temp_channel_3
+    except ValueError:
+        temp_50k_val = temp_channel_3
+    
+    # Device stage temperature (Input B)  
+    temp_device = gl7_controller.read_temperature('B')
+    
+    print(f"3-head Temperature (Input A): {temp_3he_head} K")
+    print(f"4-head Temperature (Input C): {temp_4he_head} K")
+    print(f"4K Stage Temperature (Channel 2): {temp_4k_val} K")
+    print(f"50K Stage Temperature (Channel 3): {temp_50k_val} K")
+    print(f"Device Stage Temperature (Input B): {temp_device} K")
+    
+    # Check current heater/switch status
+    print("\nHeater/Switch Status:")
+    
+    # Check pump heaters (heater outputs 1 & 2)
+    # 4He Pump Heater (Output 1)
+    mode_1, output_1 = gl7_controller.query_heater_output_status(1)
+    try:
+        output_1_val = float(output_1) if output_1 else 0.0
+        print(f"  4-pump Heater (Heater Output 1): Mode={mode_1}, Output={output_1_val}%")
+    except (ValueError, TypeError):
+        print(f"  4-pump Heater (Heater Output 1): Mode={mode_1}, Output={output_1}")
+    
+    # 3He Pump Heater (Output 2)
+    mode_2, output_2 = gl7_controller.query_heater_output_status(2)
+    try:
+        output_2_val = float(output_2) if output_2 else 0.0
+        print(f"  3-pump Heater (Heater Output 2): Mode={mode_2}, Output={output_2_val}%")
+    except (ValueError, TypeError):
+        print(f"  3-pump Heater (Heater Output 2): Mode={mode_2}, Output={output_2}")
+    
+    # Check heat switches (still on analog outputs 3 & 4)
+    for output_num, name in gl7_controller.analog_heat_switches.items():
+        config = gl7_controller.query_analog_status(output_num)
+        print(f"  {name} (Analog {output_num}): Config={config}")
