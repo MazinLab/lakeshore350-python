@@ -6,32 +6,22 @@ GL7 Step 2B: Heat Switch Status Verification
 import time
 
 def execute_step2b(gl7_controller):
-    """Execute GL7 Step 2B: Heat Switch Status Verification"""
-    print("STEP 2B: HEAT SWITCH STATUS VERIFICATION")
+    """Execute GL7 Step 2b: Heat Switch Verification"""
+    print("GL7 STEP 2B: HEAT SWITCH VERIFICATION")
     print("-" * 40)
-    print("Manual: 'During pre-cooling, when both heat switches turn OFF (< 10K)'")
-    print("Verifying that both heat switches have turned OFF...")
-    print("Checking 3He Head, 4He Head, 4K Stage, and 50K Stage temperatures...")
+    print("Verifying heat switches turn OFF when heads reach ~10K...")
+    print("This step checks temperatures and heat switch status before proceeding to pump heating.\n")
     
-    # Check analog heat switch status
-    print("\nChecking heat switch status:")
-    for output_num, name in gl7_controller.analog_heat_switches.items():
-        config = gl7_controller.query_analog_status(output_num)
-        print(f"  {name} (Analog {output_num}): {config}")
+    # Temperature Check - Read all temperatures first
+    print("Temperature Check:")
     
-    # Verify head temperatures are at 10K threshold
-    print("\nChecking head thermometer readings:")
-    
-    # 3He Head thermometer (Input A)
+    # 3He Head temperature (Input A)
     temp_3he_head = gl7_controller.read_temperature('A')
-    print(f"  3He Head Temperature (Input A): {temp_3he_head} K")
+    print(f"  3-head Temperature (Input A): {temp_3he_head} K")
     
-    # 4He Head thermometer (Input C)
+    # 4He Head temperature (Input C)
     temp_4he_head = gl7_controller.read_temperature('C')
-    print(f"  4He Head Temperature (Input C): {temp_4he_head} K")
-    
-    # Also check 4K and 50K stage temperatures
-    print("\nChecking stage temperatures:")
+    print(f"  4-head Temperature (Input C): {temp_4he_head} K")
     
     # 4K stage temperature (Channel 2)
     temp_channel_2 = gl7_controller.send_command("KRDG? 2")
@@ -55,32 +45,13 @@ def execute_step2b(gl7_controller):
         temp_50k_stage = temp_channel_3
     print(f"  50K Stage Temperature (Channel 3): {temp_50k_stage} K")
     
-    # Temperature assessment
-    print("\nTemperature Assessment:")
-    head_temps_ready = []
+    # Heat Switch Status
+    print("\nHeat Switch Status:")
+    for output_num, name in gl7_controller.analog_heat_switches.items():
+        config = gl7_controller.query_analog_status(output_num)
+        print(f"  {name} (Analog {output_num}): {config}")
     
-    if isinstance(temp_3he_head, float) and temp_3he_head <= 10:
-        print(f"  ✓ 3He Head ready at {temp_3he_head} K (≤ 10K)")
-        head_temps_ready.append("3He")
-    elif isinstance(temp_3he_head, float):
-        print(f"  → 3He Head at {temp_3he_head} K (> 10K)")
-    else:
-        print(f"  → 3He Head reading: {temp_3he_head}")
-        
-    if isinstance(temp_4he_head, float) and temp_4he_head <= 10:
-        print(f"  ✓ 4He Head ready at {temp_4he_head} K (≤ 10K)")
-        head_temps_ready.append("4He")
-    elif isinstance(temp_4he_head, float):
-        print(f"  → 4He Head at {temp_4he_head} K (> 10K)")
-    else:
-        print(f"  → 4He Head reading: {temp_4he_head}")
+    print()
     
-    if len(head_temps_ready) == 2:
-        print("  ✓ Both heads at 10K threshold - heat switches should be OFF")
-        print("  → Ready to proceed to pump heating phase")
-    else:
-        print(f"  → {len(head_temps_ready)}/2 heads ready for pump heating")
-    
-    print("\n")
-    
-    return head_temps_ready
+    # User confirmation before proceeding to pump heating
+    input("Press ENTER to confirm both heat switches are OFF and proceed to Step 3 (Pump Heating)...")

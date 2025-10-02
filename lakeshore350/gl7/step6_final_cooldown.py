@@ -6,61 +6,45 @@ GL7 Step 6: Final Cooldown Monitoring
 import time
 
 def execute_step6(gl7_controller):
-    """Execute GL7 Step 6: Final Cooldown to ~300mK"""
-    print("STEP 6: FINAL COOLDOWN TO ~300mK")
+    """Execute GL7 Step 6: Final Status Check"""
+    print("GL7 STEP 6: FINAL STATUS CHECK")
     print("-" * 35)
-    print("Monitoring final temperature progression...")
-    print("Checking 4K Stage, 50K Stage, 3He Head, and 4He Head temperatures...")
+    print("Monitoring final cooldown to ~300mK...")
     
-    temp_4he_head_final = None
+    # Temperature Check
+    print("\nTemperature Check:")
+    final_3he_head = gl7_controller.read_temperature('A')  # 3-head
+    final_4he_head = gl7_controller.read_temperature('C')  # 4-head
     
-    for cycle in range(1, 4):
-        print(f"\nTemperature Check {cycle}/3:")
-        
-        # Read all key temperatures
-        temp_3he_head = gl7_controller.read_temperature('A')  # 3He Head
-        temp_4he_head = gl7_controller.read_temperature('C')  # 4He Head
-        
-        # Read stage temperatures
-        temp_channel_2 = gl7_controller.send_command("KRDG? 2")  # 4K stage
-        temp_channel_3 = gl7_controller.send_command("KRDG? 3")  # 50K stage
-        
-        try:
-            if temp_channel_2 and temp_channel_2 != "T_OVER":
-                temp_4k_stage = float(temp_channel_2)
-            else:
-                temp_4k_stage = temp_channel_2
-        except ValueError:
-            temp_4k_stage = temp_channel_2
-            
-        try:
-            if temp_channel_3 and temp_channel_3 != "T_OVER":
-                temp_50k_stage = float(temp_channel_3)
-            else:
-                temp_50k_stage = temp_channel_3
-        except ValueError:
-            temp_50k_stage = temp_channel_3
-        
-        print(f"  4K Stage Temperature (Channel 2): {temp_4k_stage} K")
-        print(f"  50K Stage Temperature (Channel 3): {temp_50k_stage} K")
-        print(f"  3He Head Temperature (Input A): {temp_3he_head} K")
-        print(f"  4He Head Temperature (Input C): {temp_4he_head} K")
-        
-        temp_4he_head_final = temp_4he_head
-        
-        # Check if 4He head is approaching 300mK
-        if isinstance(temp_4he_head, float):
-            if temp_4he_head <= 0.5:
-                print(f"    ✓ 4He Head approaching target at {temp_4he_head} K")
-                if temp_4he_head <= 0.3:
-                    print("    ✓ 4He Head has reached ~300mK - GL7 ready!")
-                    break
-            else:
-                print(f"    → 4He Head cooling toward 300mK target")
-        
-        if cycle < 3:
-            time.sleep(2)
+    final_channel_2 = gl7_controller.send_command("KRDG? 2")  # 4K stage
+    final_channel_3 = gl7_controller.send_command("KRDG? 3")  # 50K stage
     
-    print("\n")
+    try:
+        if final_channel_2 and final_channel_2 != "T_OVER":
+            final_4k_stage = float(final_channel_2)
+        else:
+            final_4k_stage = final_channel_2
+    except ValueError:
+        final_4k_stage = final_channel_2
+        
+    try:
+        if final_channel_3 and final_channel_3 != "T_OVER":
+            final_50k_stage = float(final_channel_3)
+        else:
+            final_50k_stage = final_channel_3
+    except ValueError:
+        final_50k_stage = final_channel_3
     
-    return temp_4he_head_final
+    print(f"  3-head Temperature (Input A): {final_3he_head} K")
+    print(f"  4-head Temperature (Input C): {final_4he_head} K")
+    print(f"  4K Stage Temperature (Channel 2): {final_4k_stage} K")
+    print(f"  50K Stage Temperature (Channel 3): {final_50k_stage} K")
+    
+    # Final heater/switch status
+    print("\nFinal Heater/Switch Status:")
+    print("  4-pump Heater (Heater Output 1): Should be OFF (0% power)")
+    print("  3-pump Heater (Heater Output 2): Should be OFF (0% power)")
+    
+    for output_num, name in gl7_controller.analog_heat_switches.items():
+        config = gl7_controller.query_analog_status(output_num)
+        print(f"  {name}: Config={config} (should be ON)")

@@ -11,7 +11,6 @@ from .step3_pump_heating import execute_step3
 from .step4_4he_pump_transition import execute_step4
 from .step5_3he_pump_transition import execute_step5
 from .step6_final_cooldown import execute_step6
-from .step7_final_status import execute_step7
 
 __all__ = [
     'execute_step1',
@@ -20,6 +19,5 @@ __all__ = [
     'execute_step3',
     'execute_step4',
     'execute_step5',
-    'execute_step6',
-    'execute_step7'
+    'execute_step6'
 ]
