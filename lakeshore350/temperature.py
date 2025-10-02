@@ -7,7 +7,7 @@ import serial
 import time
 
 class TemperatureReader:
-    def __init__(self, port="/dev/ttyUSB0", baudrate=57600, timeout=2):
+    def __init__(self, port="/dev/ttyUSB2", baudrate=57600, timeout=2):
         """Initialize connection to Lake Shore 350"""
         self.ser = serial.Serial(
             port=port,

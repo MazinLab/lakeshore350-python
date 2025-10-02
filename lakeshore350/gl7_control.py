@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
 GL7 Sorption Cooler Automation Script for Lake Shore 350
-Complete automation sequence based on GL7 Manual Section 6.1
+Complete automation sequence ed on GL7 Manual Section 6.1
 Heater commands commented out for safety testing
 Stage Temperatures Don't Accurately Reflect Listed Channels/Inputs
 """
 
 import time
 from .gl7 import (
-    execute_step1, execute_step2a, execute_step2b, execute_step3,
-    execute_step4, execute_step5, execute_step6, execute_step7
+    execute_step1, execute_step2a, execute_step2b, execute_step3, 
+    execute_step4, execute_step5, execute_step6
 )
 
 class GL7Controller:
@@ -19,7 +19,7 @@ class GL7Controller:
         
         # GL7 Configuration mapping
         self.relay_pump_heaters = {1: "4He Pump Heater", 2: "3He Pump Heater"}
-        self.analog_heat_switches = {3: "4He Heat Switch", 4: "3He Heat Switch"}
+        self.analog_heat_switches = {3: "4-switch", 4: "3-switch"}
 
     def read_temperature(self, input_channel):
         """Read temperature from specified input (A, B, C, D)"""
@@ -47,6 +47,14 @@ class GL7Controller:
         config = self.send_command(f"ANALOG? {output_num}")
         return config
     
+    def query_heater_output_status(self, output_num):
+        """Query the status of a heater output (mode and current level)"""
+        # Get the output mode (0=Off, 1=Monitor Out, 2=Open Loop, 3=Zone, 4=Still, 5=Closed Loop PID, 6=Closed Loop PI)
+        mode = self.send_command(f"OUTMODE? {output_num}")
+        # Get the manual output percentage (for Open Loop mode)
+        manual_output = self.send_command(f"MOUT? {output_num}")
+        return mode, manual_output
+    
     def start_gl7_sequence(self):
         """
         Complete GL7 sorption cooler startup sequence - MODULAR VERSION
@@ -68,7 +76,6 @@ class GL7Controller:
         execute_step4(self)
         execute_step5(self)
         execute_step6(self)
-        execute_step7(self)
         
         print("\n" + "=" * 60)
         print("GL7 STARTUP SEQUENCE SIMULATION COMPLETE")
