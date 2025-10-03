@@ -41,12 +41,14 @@ class TemperatureRecorder:
             "50K_Stage_Temp_K", 
             "Device_Stage_Temp_K",
             "3_Head_Temp_K",
-            "4_Head_Temp_K"
+            "4_Head_Temp_K",
+            "3_Pump_Temp_K",
+            "4_Pump_Temp_K"
         ]
         
         # Define column widths for nice formatting (adjusted for proper alignment)
-        # Timestamp, Date, Time, 4K_Stage, 50K_Stage, Device_Stage, 3_Head, 4_Head
-        self.column_widths = [28, 12, 12, 17, 17, 20, 16, 16]
+        # Timestamp, Date, Time, 4K_Stage, 50K_Stage, Device_Stage, 3_Head, 4_Head, 3_Pump, 4_Pump
+        self.column_widths = [28, 12, 12, 17, 17, 20, 16, 16, 16, 16]
         
         # Don't print header yet - will be done in run() method
         
@@ -124,6 +126,16 @@ class TemperatureRecorder:
             # 4-head temperature (Input C)
             temp_4_head = self.temp_reader.read_temperature('C')
             
+            # 3-pump temperature (Input D)
+            temp_3_pump = self.temp_reader.read_temperature('D')
+            
+            # 4-pump temperature (Channel 5)
+            temp_4_pump = self.temp_reader.send_command("KRDG? 5")
+            try:
+                temp_4_pump_val = float(temp_4_pump) if temp_4_pump and temp_4_pump != "T_OVER" and temp_4_pump != "NO_RESPONSE" else temp_4_pump
+            except ValueError:
+                temp_4_pump_val = temp_4_pump
+            
             return {
                 "timestamp": timestamp,
                 "date": date_str,
@@ -132,7 +144,9 @@ class TemperatureRecorder:
                 "temp_50k": temp_50k_val,
                 "temp_device": temp_device,
                 "temp_3_head": temp_3_head,
-                "temp_4_head": temp_4_head
+                "temp_4_head": temp_4_head,
+                "temp_3_pump": temp_3_pump,
+                "temp_4_pump": temp_4_pump_val
             }
             
         except Exception as e:
@@ -150,7 +164,9 @@ class TemperatureRecorder:
                 data["temp_50k"],
                 data["temp_device"],
                 data["temp_3_head"],
-                data["temp_4_head"]
+                data["temp_4_head"],
+                data["temp_3_pump"],
+                data["temp_4_pump"]
             ]
             return row
         except Exception as e:
