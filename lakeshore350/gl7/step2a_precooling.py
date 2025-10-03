@@ -9,9 +9,18 @@ def execute_step2a(gl7_controller):
     """Execute GL7 Step 2a: Pre-cooling from room temperature to ~4K"""
     print("GL7 STEP 2A: PRE-COOLING PHASE")
     print("-" * 35)
-    print("ADR should be turned ON at this stage")
-    print("Monitoring 3-head and 4-head as they cool to ~10K threshold...")
-    print("This step takes no actions, it checks current temperatures and proceeds to Step 2b for user input.\n")
+    print("Before turning on the pulse tube, ensure GL7 heat switches are ON\n")
+    
+    # Manual heat switch control - Turn switches ON before ADR
+    print("Manual Heat Switch Control:")
+    input("Press ENTER to turn ON 4-switch...")
+    print("  → Turning ON 4-switch (Analog 3 to 5V)")
+    gl7_controller.send_command("ANALOG 3,1,1,5.0,0.0,0")
+    
+    input("Press ENTER to turn ON 3-switch...")
+    print("  → Turning ON 3-switch (Analog 4 to 5V)")
+    gl7_controller.send_command("ANALOG 4,1,1,5.0,0.0,0")
+    print()
     
     # Single temperature check - operator will confirm readiness in Step 2b
     print("Temperature Check:")
@@ -62,34 +71,5 @@ def execute_step2a(gl7_controller):
     print(f"  3-pump Temperature (Input D): {temp_3pump} K")
     print(f"  4-pump Temperature (Channel 5): {temp_4pump_val} K")
     
-    # Check if both heads have reached 10K
-    if isinstance(temp_3he_head, float):
-        if temp_3he_head <= 10:
-            print(f"    ✓ 3-head at {temp_3he_head} K (≤ 10K)")
-            heads_at_10k.append("3He")
-        else:
-            print(f"    → 3-head at {temp_3he_head} K (> 10K)")
-    else:
-        print(f"    → 3-head reading: {temp_3he_head}")
-    
-    if isinstance(temp_4he_head, float):
-        if temp_4he_head <= 10:
-            print(f"    ✓ 4-head at {temp_4he_head} K (≤ 10K)")
-            heads_at_10k.append("4He")
-        else:
-            print(f"    → 4-head at {temp_4he_head} K (> 10K)")
-    else:
-        print(f"    → 4-head reading: {temp_4he_head}")
-    
-    # Summary for this check
-    if len(heads_at_10k) == 2:
-        print("    ✓ BOTH heads have reached 10K - heat switches should turn OFF")
-    elif len(heads_at_10k) == 1:
-        print(f"    → {heads_at_10k[0]} head ready, waiting for other head")
-    else:
-        print("    → Both heads still cooling toward 10K")
-    
     print()
-    
-    # Always proceed to Step 2b for user confirmation
-    print("→ Proceeding to Step 2b for heat switch verification and user input")
+    print("→ Start pulse tube cooling and proceed to next step")

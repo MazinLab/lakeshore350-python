@@ -9,8 +9,7 @@ def execute_step2b_test(gl7_controller):
     """Execute GL7 Step 2b: Heat Switch Verification"""
     print("GL7 STEP 2B: HEAT SWITCH VERIFICATION")
     print("-" * 40)
-    print("Verifying heat switches turn OFF when heads reach ~10K...")
-    print("This step checks temperatures and heat switch status before proceeding to pump heating.\n")
+    print("Confirm temperature ~10K before turning off switches.\n")
     
     # Temperature Check - Read all temperatures first
     print("Temperature Check:")
@@ -59,12 +58,32 @@ def execute_step2b_test(gl7_controller):
     except ValueError:
         temp_4pump_val = temp_4pump
     print(f"  4-pump Temperature (Channel 5): {temp_4pump_val} K")
+    print()
+    
+    # Manual heat switch control (TEST MODE - COMMANDS COMMENTED OUT)
+    print("Manual Heat Switch Control:")
+    input("Press ENTER to turn OFF 4-switch...")
+    print("  → Turning OFF 4-switch (Analog 3 to 0V)")
+    # COMMENTED OUT: gl7_controller.send_command("ANALOG 3,0")
+    
+    input("Press ENTER to turn OFF 3-switch...")
+    print("  → Turning OFF 3-switch (Analog 4 to 0V)")
+    # COMMENTED OUT: gl7_controller.send_command("ANALOG 4,0")
+    print()
     
     # Heat Switch Status
     print("\nHeat Switch Status:")
     for output_num, name in gl7_controller.analog_heat_switches.items():
         config = gl7_controller.query_analog_status(output_num)
-        print(f"  {name} (Analog {output_num}): {config}")
+        # Parse the config to determine ON/OFF status and voltage
+        try:
+            config_parts = config.split(',') if config else []
+            status_value = int(config_parts[0]) if len(config_parts) > 0 else 0
+            voltage = float(config_parts[2]) if len(config_parts) > 2 else 0.0
+            status_text = f"(ON, {voltage:.1f}V)" if status_value == 1 else f"(OFF, {voltage:.1f}V)"
+        except (ValueError, IndexError):
+            status_text = "(UNKNOWN)"
+        print(f"  {name} (Analog {output_num}): {config} {status_text}")
     
     print()
     

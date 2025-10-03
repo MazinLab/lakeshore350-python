@@ -62,6 +62,14 @@ def execute_step6_test(gl7_controller):
     
     for output_num, name in gl7_controller.analog_heat_switches.items():
         config = gl7_controller.query_analog_status(output_num)
-        print(f"  {name}: Config={config} (should be ON)")
+        # Parse the config to determine ON/OFF status and voltage
+        try:
+            config_parts = config.split(',') if config else []
+            status_value = int(config_parts[0]) if len(config_parts) > 0 else 0
+            voltage = float(config_parts[2]) if len(config_parts) > 2 else 0.0
+            status_text = f"(ON, {voltage:.1f}V)" if status_value == 1 else f"(OFF, {voltage:.1f}V)"
+        except (ValueError, IndexError):
+            status_text = "(UNKNOWN)"
+        print(f"  {name}: Config={config} {status_text} (should be ON)")
     
     return True

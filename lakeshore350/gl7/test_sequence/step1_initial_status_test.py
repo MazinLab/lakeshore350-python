@@ -84,9 +84,17 @@ def execute_step1_test(gl7_controller):
     # Check heat switches (still on analog outputs 3 & 4)
     for output_num, name in gl7_controller.analog_heat_switches.items():
         config = gl7_controller.query_analog_status(output_num)
-        print(f"  {name} (Analog {output_num}): Config={config}")
+        # Parse the config to determine ON/OFF status and voltage
+        try:
+            config_parts = config.split(',') if config else []
+            status_value = int(config_parts[0]) if len(config_parts) > 0 else 0
+            voltage = float(config_parts[2]) if len(config_parts) > 2 else 0.0
+            status_text = f"(ON, {voltage:.1f}V)" if status_value == 1 else f"(OFF, {voltage:.1f}V)"
+        except (ValueError, IndexError):
+            status_text = "(UNKNOWN)"
+        print(f"  {name} (Analog {output_num}): Config={config} {status_text}")
     
-    print("\n🏃 Step 1 Status: INITIAL SYSTEM CHECK COMPLETE")
+    print("\nStep 1 Status: INITIAL SYSTEM CHECK COMPLETE")
     print("Note: System status verified, ready for precooling")
     
     return True
