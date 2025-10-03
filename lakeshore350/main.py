@@ -6,9 +6,7 @@ Main interface for Lakeshore 350 Driver
 import argparse
 import serial
 from .temperature import TemperatureReader
-from .query_heaters import HeaterController
 from .gl7_control import GL7Controller
-from .gl7 import test_sequence
 from .gl7 import test_sequence
 
 def main():
@@ -20,13 +18,6 @@ def main():
     parser.add_argument("--all-inputs", action="store_true", help="Read all sensor inputs (A, B, C, D)")
     parser.add_argument("--all", action="store_true", help="Read all inputs and channels 2-5")
     parser.add_argument("--info", action="store_true", help="Get device information")
-    
-    # Heater query arguments (safe - query only)
-    parser.add_argument("--query-relay", type=int, choices=[1, 2], help="Query relay heater status (1 for He4 pump, 2 for 3He pump)")
-    parser.add_argument("--query-analog", type=int, choices=[3, 4], help="Query analog heater/switch status (3 for 4He pump, 4 for 3He pump)")
-    parser.add_argument("--query-all-relays", action="store_true", help="Query both relay heaters (both 3He and 4He pump heaters)")
-    parser.add_argument("--query-all-analogs", action="store_true", help="Query both analog heaters/switches (GL7 heat switches)")
-    parser.add_argument("--query-all-heaters", action="store_true", help="Query all heaters (relays + analog outputs)")
     
     # GL7 automation arguments
     parser.add_argument("--start-gl7", action="store_true", help="Start GL7 sorption cooler sequence (will be production version)")
@@ -53,24 +44,27 @@ def main():
     
     # Emergency heater stop argument
     parser.add_argument("--emergency-heater-stop", action="store_true", help="EMERGENCY HEATER STOP: Immediately shut down all heaters and heat switches")
+    
+    # Heater control arguments
+    parser.add_argument("--heaters", nargs=2, metavar=('OUTPUT', 'POWER'), help="Set heater output: --heaters <output_num> <power_percent>")
+    parser.add_argument("--heaters-both", nargs=2, type=float, metavar=('POWER1', 'POWER2'), help="Set both heaters: --heaters-both <power1> <power2>")
+    parser.add_argument("--heaters-query", action="store_true", help="Query current heater status")
 
     
     args = parser.parse_args()
     
     # If no specific action requested, default to reading all inputs
     if not any([args.input, args.channel, args.channels, args.all_inputs, args.all, args.info,
-                args.query_relay, args.query_analog, args.query_all_relays, 
-                args.query_all_analogs, args.query_all_heaters, args.start_gl7,
-                args.gl7_step1, args.gl7_step2a, args.gl7_step2b, args.gl7_step3,
+                args.start_gl7, args.gl7_step1, args.gl7_step2a, args.gl7_step2b, args.gl7_step3,
                 args.gl7_step4, args.gl7_step5, args.gl7_step6, args.gl7_step7,
                 args.start_gl7_test_sequence, args.gl7_step1_test, args.gl7_step2a_test,
                 args.gl7_step2b_test, args.gl7_step3_test, args.gl7_step4_test,
-                args.gl7_step5_test, args.gl7_step6_test, args.emergency_heater_stop]):
+                args.gl7_step5_test, args.gl7_step6_test, args.emergency_heater_stop,
+                args.heaters, args.heaters_both, args.heaters_query]):
         args.all_inputs = True
     
     try:
         temp_reader = TemperatureReader(port=args.port)
-        heater_controller = HeaterController(temp_reader.send_command)
         gl7_controller = GL7Controller(temp_reader.send_command)
         
         if args.info:
@@ -129,73 +123,6 @@ def main():
                     print(f"  {channel_name}: {temp:.3f} K")
                 else:
                     print(f"  {channel_name}: {temp}")
-        
-        # Heater query commands (safe - read only)
-        if args.query_relay:
-            print(f"Relay Heater {args.query_relay} Status:")
-            result = heater_controller.query_relay_heater(args.query_relay)
-            print(f"  Raw Config: {result['config_raw']}")
-            print(f"  Raw Status: {result['status_raw']}")
-            if result['config_parsed']:
-                print(f"  Mode: {result['config_parsed']['mode_text']}")
-                if 'alarm_text' in result['config_parsed']:
-                    print(f"  Alarm Input: {result['config_parsed']['input_alarm']}")
-                    print(f"  Alarm Type: {result['config_parsed']['alarm_text']}")
-            if result['status_parsed']:
-                print(f"  Current Status: {result['status_parsed']['status_text']}")
-        
-        if args.query_analog:
-            print(f"Analog Output {args.query_analog} Status:")
-            result = heater_controller.query_analog_heater(args.query_analog)
-            print(f"  Raw Config: {result['config_raw']}")
-            if result['config_parsed']:
-                parsed = result['config_parsed']
-                print(f"  Input Channel: {parsed['input_text']}")
-                print(f"  Units: {parsed['units_text']}")
-                print(f"  Range: {parsed['low_value']} to {parsed['high_value']}")
-                print(f"  Output Type: {parsed['polarity_text']}")
-        
-        if args.query_all_relays:
-            print("All Relay Heaters (He4 and He3 Pump Heaters):")
-            results = heater_controller.query_all_relay_heaters()
-            for name, result in results.items():
-                relay_num = result['relay_number']
-                print(f"  Relay {relay_num}:")
-                print(f"    Config: {result['config_raw']}")
-                print(f"    Status: {result['status_raw']}")
-                if result['config_parsed']:
-                    print(f"    Mode: {result['config_parsed']['mode_text']}")
-                if result['status_parsed']:
-                    print(f"    State: {result['status_parsed']['status_text']}")
-        
-        if args.query_all_analogs:
-            print("All Analog Outputs (He4 and He3 Pump Heat Switches):")
-            results = heater_controller.query_all_analog_heaters()
-            for name, result in results.items():
-                output_num = result['output_number']
-                print(f"  Analog Output {output_num}:")
-                print(f"    Config: {result['config_raw']}")
-                if result['config_parsed']:
-                    parsed = result['config_parsed']
-                    print(f"    Input: {parsed['input_text']}")
-                    print(f"    Units: {parsed['units_text']}")
-                    print(f"    Range: {parsed['low_value']} to {parsed['high_value']}")
-        
-        if args.query_all_heaters:
-            print("All Heater Systems Status:")
-            results = heater_controller.query_all_heaters()
-
-            print("\n  Relay Heaters (He4 and He3 Pump Heaters):")
-            for name, result in results.items():
-                if 'relay_heater' in name:
-                    relay_num = result['relay_number']
-                    print(f"    Relay {relay_num}: {result['config_raw']} | Status: {result['status_raw']}")
-                    
-            print("\n  Analog Outputs (He4 and He3 Pump Heat Switches):")
-            for name, result in results.items():
-                if 'analog_heater' in name:
-                    output_num = result['output_number']
-                    print(f"    Analog {output_num}: {result['config_raw']}")
         
         # GL7 automation sequence (will be production version when commands are uncommented)
         if args.start_gl7:
@@ -365,6 +292,69 @@ def main():
                 print(f"\nCRITICAL ERROR during emergency heater stop: {e}")
                 print("Manual intervention may be required!")
                 raise
+        
+        # Heater control handling
+        if args.heaters or args.heaters_both or args.heaters_query:
+            from .heaters import set_heater_output, query_heater_status
+            import time
+            
+            if args.heaters_query:
+                # Query mode - just show current status
+                print("\nCurrent Heater Status:")
+                query_heater_status(gl7_controller, 1)
+                query_heater_status(gl7_controller, 2)
+                
+            elif args.heaters_both:
+                # Set both heaters
+                print("\nSetting Both Heaters:")
+                success1 = set_heater_output(gl7_controller, 1, args.heaters_both[0])
+                success2 = set_heater_output(gl7_controller, 2, args.heaters_both[1])
+                
+                # Wait a moment for commands to take effect
+                time.sleep(1)
+                
+                # Query status after setting
+                print("\nHeater Status After Setting:")
+                query_heater_status(gl7_controller, 1)
+                query_heater_status(gl7_controller, 2)
+                
+                if success1 and success2:
+                    print("\nBoth heaters set successfully.")
+                else:
+                    print("\nWarning: One or more heaters may not have been set correctly.")
+                    
+            elif args.heaters:
+                # Set single heater
+                try:
+                    output_num = int(args.heaters[0])
+                    power_percent = float(args.heaters[1])
+                    
+                    if output_num not in [1, 2]:
+                        print("Error: Output number must be 1 or 2")
+                        return
+                    if power_percent < 0 or power_percent > 100:
+                        print("Error: Power must be between 0 and 100")
+                        return
+                    
+                    heater_name = "4-pump Heater" if output_num == 1 else "3-pump Heater"
+                    print(f"\nSetting {heater_name}:")
+                    success = set_heater_output(gl7_controller, output_num, power_percent)
+                    
+                    # Wait a moment for commands to take effect
+                    time.sleep(1)
+                    
+                    # Query status after setting
+                    print(f"\n{heater_name} Status After Setting:")
+                    query_heater_status(gl7_controller, output_num)
+                    
+                    if success:
+                        print(f"\n{heater_name} set successfully.")
+                    else:
+                        print(f"\nWarning: {heater_name} may not have been set correctly.")
+                        
+                except (ValueError, IndexError):
+                    print("Error: Invalid arguments for --heaters. Use: --heaters <output_num> <power_percent>")
+                    return
         
 
     
