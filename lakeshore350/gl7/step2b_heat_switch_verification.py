@@ -45,6 +45,21 @@ def execute_step2b(gl7_controller):
         temp_50k_stage = temp_channel_3
     print(f"  50K Stage Temperature (Channel 3): {temp_50k_stage} K")
     
+    # 3-pump temperature (Input D)
+    temp_3pump = gl7_controller.read_temperature('D')
+    print(f"  3-pump Temperature (Input D): {temp_3pump} K")
+    
+    # 4-pump temperature (Channel 5)
+    temp_4pump = gl7_controller.send_command("KRDG? 5")
+    try:
+        if temp_4pump and temp_4pump != "T_OVER":
+            temp_4pump_val = float(temp_4pump)
+        else:
+            temp_4pump_val = temp_4pump
+    except ValueError:
+        temp_4pump_val = temp_4pump
+    print(f"  4-pump Temperature (Channel 5): {temp_4pump_val} K")
+    
     # Heat Switch Status
     print("\nHeat Switch Status:")
     for output_num, name in gl7_controller.analog_heat_switches.items():

@@ -42,6 +42,21 @@ def execute_step4(gl7_controller):
     print(f"  4K Stage Temperature (Channel 2): {pre_4k_stage} K")
     print(f"  50K Stage Temperature (Channel 3): {pre_50k_stage} K")
     
+    # 3-pump temperature (Input D)
+    pre_temp_3pump = gl7_controller.read_temperature('D')
+    print(f"  3-pump Temperature (Input D): {pre_temp_3pump} K")
+    
+    # 4-pump temperature (Channel 5)
+    pre_temp_4pump = gl7_controller.send_command("KRDG? 5")
+    try:
+        if pre_temp_4pump and pre_temp_4pump != "T_OVER":
+            pre_4pump_val = float(pre_temp_4pump)
+        else:
+            pre_4pump_val = pre_temp_4pump
+    except ValueError:
+        pre_4pump_val = pre_temp_4pump
+    print(f"  4-pump Temperature (Channel 5): {pre_4pump_val} K")
+    
     # Check heads for transition (for logic only)
     heads_ready_for_transition = []
     if isinstance(pre_temp_3he, float) and pre_temp_3he <= 4.0:

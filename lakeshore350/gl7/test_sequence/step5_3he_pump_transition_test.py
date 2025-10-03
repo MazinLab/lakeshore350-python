@@ -45,6 +45,21 @@ def execute_step5_test(gl7_controller):
     print(f"  4K Stage Temperature (Channel 2): {temp_4k_stage} K")
     print(f"  50K Stage Temperature (Channel 3): {temp_50k_stage} K")
     
+    # 3-pump temperature (Input D)
+    temp_3pump = gl7_controller.read_temperature('D')
+    print(f"  3-pump Temperature (Input D): {temp_3pump} K")
+    
+    # 4-pump temperature (Channel 5)
+    temp_4pump = gl7_controller.send_command("KRDG? 5")
+    try:
+        if temp_4pump and temp_4pump != "T_OVER":
+            temp_4pump_val = float(temp_4pump)
+        else:
+            temp_4pump_val = temp_4pump
+    except ValueError:
+        temp_4pump_val = temp_4pump
+    print(f"  4-pump Temperature (Channel 5): {temp_4pump_val} K")
+    
     # Check if 3He head and 4He head have reached 2K (for logic only)
     targets_at_2k = []
     if isinstance(temp_3he_head, float) and temp_3he_head <= 2.0:
@@ -82,3 +97,5 @@ def execute_step5_test(gl7_controller):
     # COMMENTED OUT: gl7_controller.send_command("ANALOG 4,1,1,5.0,0.0,0")
     print("  → 3-switch ACTIVATED (5V)")
     print("Final cooldown to ~300mK begins")
+    
+    return True

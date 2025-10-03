@@ -23,8 +23,44 @@ def execute_step2a_test(gl7_controller):
     # Read 4He Head temperature (Input C)  
     temp_4he_head = gl7_controller.read_temperature('C')
     
+    # 4K stage temperature (Channel 2)
+    temp_channel_2 = gl7_controller.send_command("KRDG? 2")
+    try:
+        if temp_channel_2 and temp_channel_2 != "T_OVER":
+            temp_4k_stage = float(temp_channel_2)
+        else:
+            temp_4k_stage = temp_channel_2
+    except ValueError:
+        temp_4k_stage = temp_channel_2
+    
+    # 50K stage temperature (Channel 3)
+    temp_channel_3 = gl7_controller.send_command("KRDG? 3")
+    try:
+        if temp_channel_3 and temp_channel_3 != "T_OVER":
+            temp_50k_stage = float(temp_channel_3)
+        else:
+            temp_50k_stage = temp_channel_3
+    except ValueError:
+        temp_50k_stage = temp_channel_3
+    
+    # 3-pump temperature (Input D)
+    temp_3pump = gl7_controller.read_temperature('D')
+    # 4-pump temperature (Channel 5)
+    temp_4pump = gl7_controller.send_command("KRDG? 5")
+    try:
+        if temp_4pump and temp_4pump != "T_OVER":
+            temp_4pump_val = float(temp_4pump)
+        else:
+            temp_4pump_val = temp_4pump
+    except ValueError:
+        temp_4pump_val = temp_4pump
+
     print(f"  3-head Temperature (Input A): {temp_3he_head} K")
     print(f"  4-head Temperature (Input C): {temp_4he_head} K")
+    print(f"  4K Stage Temperature (Channel 2): {temp_4k_stage} K")
+    print(f"  50K Stage Temperature (Channel 3): {temp_50k_stage} K")
+    print(f"  3-pump Temperature (Input D): {temp_3pump} K")
+    print(f"  4-pump Temperature (Channel 5): {temp_4pump_val} K")
     
     # Check if both heads have reached 10K
     if isinstance(temp_3he_head, float):
@@ -57,3 +93,5 @@ def execute_step2a_test(gl7_controller):
     
     # Always proceed to Step 2b for user confirmation
     print("→ Proceeding to Step 2b for heat switch verification and user input")
+    
+    return True

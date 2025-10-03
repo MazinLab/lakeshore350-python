@@ -40,6 +40,21 @@ def execute_step6_test(gl7_controller):
     print(f"  4K Stage Temperature (Channel 2): {final_4k_stage} K")
     print(f"  50K Stage Temperature (Channel 3): {final_50k_stage} K")
     
+    # 3-pump temperature (Input D)
+    final_3pump = gl7_controller.read_temperature('D')
+    print(f"  3-pump Temperature (Input D): {final_3pump} K")
+    
+    # 4-pump temperature (Channel 5)
+    final_4pump = gl7_controller.send_command("KRDG? 5")
+    try:
+        if final_4pump and final_4pump != "T_OVER":
+            final_4pump_val = float(final_4pump)
+        else:
+            final_4pump_val = final_4pump
+    except ValueError:
+        final_4pump_val = final_4pump
+    print(f"  4-pump Temperature (Channel 5): {final_4pump_val} K")
+    
     # Final heater/switch status
     print("\nFinal Heater/Switch Status:")
     print("  4-pump Heater (Heater Output 1): Should be OFF (0% power)")
@@ -48,3 +63,5 @@ def execute_step6_test(gl7_controller):
     for output_num, name in gl7_controller.analog_heat_switches.items():
         config = gl7_controller.query_analog_status(output_num)
         print(f"  {name}: Config={config} (should be ON)")
+    
+    return True

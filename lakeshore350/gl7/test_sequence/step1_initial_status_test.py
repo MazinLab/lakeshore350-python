@@ -40,11 +40,26 @@ def execute_step1_test(gl7_controller):
     # Device stage temperature (Input B)  
     temp_device = gl7_controller.read_temperature('B')
     
+    # 3-pump temperature (Input D)
+    temp_3pump = gl7_controller.read_temperature('D')
+    
+    # 4-pump temperature (Channel 5)
+    temp_4pump = gl7_controller.send_command("KRDG? 5")
+    try:
+        if temp_4pump and temp_4pump != "T_OVER":
+            temp_4pump_val = float(temp_4pump)
+        else:
+            temp_4pump_val = temp_4pump
+    except ValueError:
+        temp_4pump_val = temp_4pump
+    
     print(f"3-head Temperature (Input A): {temp_3he_head} K")
     print(f"4-head Temperature (Input C): {temp_4he_head} K")
     print(f"4K Stage Temperature (Channel 2): {temp_4k_val} K")
     print(f"50K Stage Temperature (Channel 3): {temp_50k_val} K")
     print(f"Device Stage Temperature (Input B): {temp_device} K")
+    print(f"3-pump Temperature (Input D): {temp_3pump} K")
+    print(f"4-pump Temperature (Channel 5): {temp_4pump_val} K")
     
     # Check current heater/switch status
     print("\nHeater/Switch Status:")
@@ -70,3 +85,8 @@ def execute_step1_test(gl7_controller):
     for output_num, name in gl7_controller.analog_heat_switches.items():
         config = gl7_controller.query_analog_status(output_num)
         print(f"  {name} (Analog {output_num}): Config={config}")
+    
+    print("\n🏃 Step 1 Status: INITIAL SYSTEM CHECK COMPLETE")
+    print("Note: System status verified, ready for precooling")
+    
+    return True
