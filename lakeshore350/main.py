@@ -42,13 +42,11 @@ def main():
     parser.add_argument("--gl7-step5-test", action="store_true", help="Execute GL7 Step 5 TEST: 3He Pump Transition (safe)")
     parser.add_argument("--gl7-step6-test", action="store_true", help="Execute GL7 Step 6 TEST: Final Cooldown (safe)")
     
-    # Emergency heater stop argument
-    parser.add_argument("--emergency-heater-stop", action="store_true", help="EMERGENCY HEATER STOP: Immediately shut down all heaters and heat switches")
-    
     # Heater control arguments
     parser.add_argument("--heaters", nargs=2, metavar=('OUTPUT', 'POWER'), help="Set heater output: --heaters <output_num> <power_percent>")
     parser.add_argument("--heaters-both", nargs=2, type=float, metavar=('POWER1', 'POWER2'), help="Set both heaters: --heaters-both <power1> <power2>")
     parser.add_argument("--heaters-query", action="store_true", help="Query current heater status")
+    parser.add_argument("--heaters-stop", action="store_true", help="EMERGENCY HEATER STOP: Immediately shut down both heaters")
 
     
     args = parser.parse_args()
@@ -59,8 +57,8 @@ def main():
                 args.gl7_step4, args.gl7_step5, args.gl7_step6, args.gl7_step7,
                 args.start_gl7_test_sequence, args.gl7_step1_test, args.gl7_step2a_test,
                 args.gl7_step2b_test, args.gl7_step3_test, args.gl7_step4_test,
-                args.gl7_step5_test, args.gl7_step6_test, args.emergency_heater_stop,
-                args.heaters, args.heaters_both, args.heaters_query]):
+                args.gl7_step5_test, args.gl7_step6_test,
+                args.heaters, args.heaters_both, args.heaters_query, args.heaters_stop]):
         args.all_inputs = True
     
     try:
@@ -116,8 +114,8 @@ def main():
                 else:
                     print(f"  {input_name}: {temp}")
             
-            print("\nAll Channels (1-8):")
-            channel_temps = temp_reader.read_channels([1, 2, 3, 4, 5, 6, 7, 8])
+            print("\nAll Channels (2-5):")
+            channel_temps = temp_reader.read_channels([2, 3, 4, 5])
             for channel_name, temp in channel_temps.items():
                 if isinstance(temp, float):
                     print(f"  {channel_name}: {temp:.3f} K")
@@ -275,30 +273,20 @@ def main():
             except KeyboardInterrupt:
                 print("\nStep 6 TEST aborted by user")
         
-        # Emergency heater stop handling
-        if args.emergency_heater_stop:
-            from .emergency_heater_stop import emergency_shutdown, status_confirmation
-            
-            try:
-                # Perform emergency shutdown
-                emergency_shutdown(gl7_controller)
-                
-                # Provide status confirmation
-                status_confirmation(gl7_controller)
-                
-                print("\nEmergency heater stop completed successfully.")
-                
-            except Exception as e:
-                print(f"\nCRITICAL ERROR during emergency heater stop: {e}")
-                print("Manual intervention may be required!")
-                raise
-        
         # Heater control handling
-        if args.heaters or args.heaters_both or args.heaters_query:
-            from .heaters import set_heater_output, query_heater_status
+        if args.heaters or args.heaters_both or args.heaters_query or args.heaters_stop:
+            from .heaters import set_heater_output, query_heater_status, emergency_stop_heaters
             import time
             
-            if args.heaters_query:
+            if args.heaters_stop:
+                # Emergency stop mode
+                success = emergency_stop_heaters(gl7_controller)
+                if success:
+                    print("\nEmergency heater stop completed successfully.")
+                else:
+                    print("\nWarning: Some heaters may not have been shut down correctly.")
+                    
+            elif args.heaters_query:
                 # Query mode - just show current status
                 print("\nCurrent Heater Status:")
                 query_heater_status(gl7_controller, 1)

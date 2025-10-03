@@ -49,6 +49,90 @@ def query_heater_status(gl7_controller, output_num):
         print(f"  Error querying heater output {output_num}: {e}")
         return None, None
 
+def emergency_stop_heaters(gl7_controller):
+    """Emergency stop - shut down all heaters immediately"""
+    print("EMERGENCY HEATER STOP INITIATED")
+    print("=" * 50)
+    print("Shutting down all heaters...")
+    
+    # Turn off all heater outputs (1 & 2)
+    print("\nShutting down heater outputs:")
+    success_list = []
+    
+    try:
+        # Turn off 4-pump heater (Output 1)
+        gl7_controller.send_command("MOUT 1,0.0")
+        print("  4-pump Heater (Output 1): SHUT DOWN (0% power)")
+        success_list.append(True)
+    except Exception as e:
+        print(f"  Error shutting down 4-pump heater: {e}")
+        success_list.append(False)
+    
+    try:
+        # Turn off 3-pump heater (Output 2)
+        gl7_controller.send_command("MOUT 2,0.0")
+        print("  3-pump Heater (Output 2): SHUT DOWN (0% power)")
+        success_list.append(True)
+    except Exception as e:
+        print(f"  Error shutting down 3-pump heater: {e}")
+        success_list.append(False)
+    
+    # Wait a moment for commands to take effect
+    time.sleep(2)
+    
+    # Status confirmation
+    print("\nPOST-SHUTDOWN STATUS CONFIRMATION")
+    print("=" * 50)
+    
+    # Check all temperatures
+    print("\nTemperature Readings:")
+    try:
+        # Head temperatures
+        temp_3he_head = gl7_controller.read_temperature('A')
+        temp_4he_head = gl7_controller.read_temperature('C')
+        temp_device = gl7_controller.read_temperature('B')
+        temp_3pump = gl7_controller.read_temperature('D')
+        
+        # Stage temperatures
+        temp_channel_2 = gl7_controller.send_command("KRDG? 2")
+        temp_channel_3 = gl7_controller.send_command("KRDG? 3")
+        temp_channel_5 = gl7_controller.send_command("KRDG? 5")
+        
+        try:
+            temp_4k_val = float(temp_channel_2) if temp_channel_2 and temp_channel_2 != "T_OVER" else temp_channel_2
+        except ValueError:
+            temp_4k_val = temp_channel_2
+            
+        try:
+            temp_50k_val = float(temp_channel_3) if temp_channel_3 and temp_channel_3 != "T_OVER" else temp_channel_3
+        except ValueError:
+            temp_50k_val = temp_channel_3
+            
+        try:
+            temp_4pump_val = float(temp_channel_5) if temp_channel_5 and temp_channel_5 != "T_OVER" else temp_channel_5
+        except ValueError:
+            temp_4pump_val = temp_channel_5
+        
+        print(f"  3-head (Input A): {temp_3he_head} K")
+        print(f"  4-head (Input C): {temp_4he_head} K")
+        print(f"  3-pump (Input D): {temp_3pump} K")
+        print(f"  4-pump (Channel 5): {temp_4pump_val} K")
+        print(f"  50K Stage (Channel 3): {temp_50k_val} K")
+        print(f"  4K Stage (Channel 2): {temp_4k_val} K")
+        print(f"  Device Stage (Input B): {temp_device} K")
+        
+    except Exception as e:
+        print(f"  Error reading temperatures: {e}")
+    
+    # Check heater status
+    print("\nHeater Status Confirmation:")
+    query_heater_status(gl7_controller, 1)
+    query_heater_status(gl7_controller, 2)
+    
+    print("\nHeaters shut off")
+    
+    return all(success_list)
+
 def main():
     """Main heater control function"""
     parser = argparse.ArgumentParser(description='GL7 Heater Control - Set heater outputs to specified power levels')
@@ -60,6 +144,8 @@ def main():
                        help='Set both heaters: --both <power1> <power2>')
     parser.add_argument('--query', action='store_true',
                        help='Query current heater status without changing settings')
+    parser.add_argument('--stop', action='store_true',
+                       help='Emergency stop: immediately shut down both heaters')
     parser.add_argument('--port', type=str, default='/dev/ttyUSB2',
                        help='Serial port for Lakeshore 350 (default: /dev/ttyUSB2)')
     parser.add_argument('--baudrate', type=int, default=57600,
@@ -68,8 +154,8 @@ def main():
     args = parser.parse_args()
     
     # Validate arguments
-    if not args.query and not args.both and (args.output is None or args.power is None):
-        parser.error("Must specify either 'output power', '--both power1 power2', or '--query'")
+    if not args.query and not args.both and not args.stop and (args.output is None or args.power is None):
+        parser.error("Must specify either 'output power', '--both power1 power2', '--query', or '--stop'")
     
     if args.power is not None and (args.power < 0 or args.power > 100):
         parser.error("Power must be between 0 and 100")
@@ -90,6 +176,14 @@ def main():
             print("\nCurrent Heater Status:")
             query_heater_status(gl7_controller, 1)
             query_heater_status(gl7_controller, 2)
+            
+        elif args.stop:
+            # Emergency stop mode
+            success = emergency_stop_heaters(gl7_controller)
+            if success:
+                print("\nEmergency heater stop completed successfully.")
+            else:
+                print("\nWarning: Some heaters may not have been shut down correctly.")
             
         elif args.both:
             # Set both heaters
