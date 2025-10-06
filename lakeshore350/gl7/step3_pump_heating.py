@@ -15,16 +15,16 @@ def execute_step3(gl7_controller):
     input("\nPress ENTER when ready to start 4-pump heater...")
     
     print(f"  Starting 4-pump Heater (Heater Output 1):")
-    # COMMENTED OUT: gl7_controller.send_command("OUTMODE 1,3,0,0")
-    # COMMENTED OUT: gl7_controller.send_command("MOUT 1,75.0")
+    gl7_controller.send_command("OUTMODE 1,3,0,0")
+    gl7_controller.send_command("MOUT 1,75.0")
     print("    → 4-pump Heater at 75% power")
     
     # Wait for user confirmation before starting second heater
     input("\nPress ENTER when ready to start 3-pump heater...")
     
     print(f"  Starting 3-pump Heater (Heater Output 2):")
-    # COMMENTED OUT: gl7_controller.send_command("OUTMODE 2,3,0,0")
-    # COMMENTED OUT: gl7_controller.send_command("MOUT 2,75.0")
+    gl7_controller.send_command("OUTMODE 2,3,0,0")
+    gl7_controller.send_command("MOUT 2,75.0")
     print("    → 3-pump Heater at 75% power")
     
     print("\nBoth pumps now heating...")

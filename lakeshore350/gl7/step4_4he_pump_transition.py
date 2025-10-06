@@ -72,8 +72,7 @@ def execute_step4(gl7_controller):
     
     # Turn off 4He pump heater
     print("Turning OFF 4-pump Heater (Heater Output 1):")
-    # print("  Command would be: MOUT 1,0.0  # Set Output 1 to 0% current (OFF)")
-    # COMMENTED OUT: gl7_controller.send_command("MOUT 1,0.0")
+    gl7_controller.send_command("MOUT 1,0.0")
     print("  → 4-pump Heater DEACTIVATED (0% power)")
     
     time.sleep(1)
@@ -83,7 +82,6 @@ def execute_step4(gl7_controller):
     
     # Turn on 4He heat switch
     print(f"Turning ON {gl7_controller.analog_heat_switches[3]}:")
-    # print("  Command would be: ANALOG 3,1,1,5.0,0.0,0  # Turn ON 4He switch (5V)")
-    # COMMENTED OUT: gl7_controller.send_command("ANALOG 3,1,1,5.0,0.0,0")
+    gl7_controller.send_command("ANALOG 3,1,1,5.0,0.0,0")
     print("  → 4-switch ACTIVATED (5V)")
     print("Cooling continues, proceed to step 5")
