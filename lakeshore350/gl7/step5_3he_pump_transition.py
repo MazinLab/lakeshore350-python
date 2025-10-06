@@ -21,29 +21,13 @@ def execute_step5(gl7_controller):
     temp_4he_head = gl7_controller.read_temperature('C')  # 4He Head
     
     # Read stage temperatures
-    temp_channel_2 = gl7_controller.send_command("KRDG? 2")  # 4K stage
-    temp_channel_3 = gl7_controller.send_command("KRDG? 3")  # 50K stage
-    
-    try:
-        if temp_channel_2 and temp_channel_2 != "T_OVER":
-            temp_4k_stage = float(temp_channel_2)
-        else:
-            temp_4k_stage = temp_channel_2
-    except ValueError:
-        temp_4k_stage = temp_channel_2
-        
-    try:
-        if temp_channel_3 and temp_channel_3 != "T_OVER":
-            temp_50k_stage = float(temp_channel_3)
-        else:
-            temp_50k_stage = temp_channel_3
-    except ValueError:
-        temp_50k_stage = temp_channel_3
+    temp_4k_stage = gl7_controller.read_temperature('D2')   # 4K stage (Input D2)
+    temp_50k_stage = gl7_controller.read_temperature('D3')  # 50K stage (Input D3)
     
     print(f"  3-head Temperature (Input A): {temp_3he_head} K")
     print(f"  4-head Temperature (Input C): {temp_4he_head} K")
-    print(f"  4K Stage Temperature (Channel 2): {temp_4k_stage} K")
-    print(f"  50K Stage Temperature (Channel 3): {temp_50k_stage} K")
+    print(f"  4K Stage Temperature (Channel 2 (D2)): {temp_4k_stage} K")
+    print(f"  50K Stage Temperature (Channel 3 (D3)): {temp_50k_stage} K")
     
     # 3-pump temperature (Input D)
     temp_3pump = gl7_controller.read_temperature('D')

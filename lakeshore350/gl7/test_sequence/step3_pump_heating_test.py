@@ -14,18 +14,42 @@ def execute_step3_test(gl7_controller):
     # User confirmation before starting heaters
     input("\nPress ENTER when ready to start 4-pump heater...")
     
+    # Get user input for 4-pump heater percentage
+    while True:
+        try:
+            power_4pump = input("Enter 4-pump heater power percentage (0-100): ")
+            power_4pump = float(power_4pump)
+            if 0 <= power_4pump <= 100:
+                break
+            else:
+                print("Please enter a value between 0 and 100")
+        except ValueError:
+            print("Please enter a valid number")
+    
     print(f"  Starting 4-pump Heater (Heater Output 1):")
     # COMMENTED OUT: gl7_controller.send_command("OUTMODE 1,3,0,0")
-    # COMMENTED OUT: gl7_controller.send_command("MOUT 1,75.0")
-    print("    → 4-pump Heater at 75% power")
+    # COMMENTED OUT: gl7_controller.send_command(f"MOUT 1,{power_4pump}")
+    print(f"    → 4-pump Heater at {power_4pump}% power")
     
     # Wait for user confirmation before starting second heater
     input("\nPress ENTER when ready to start 3-pump heater...")
     
+    # Get user input for 3-pump heater percentage
+    while True:
+        try:
+            power_3pump = input("Enter 3-pump heater power percentage (0-100): ")
+            power_3pump = float(power_3pump)
+            if 0 <= power_3pump <= 100:
+                break
+            else:
+                print("Please enter a value between 0 and 100")
+        except ValueError:
+            print("Please enter a valid number")
+    
     print(f"  Starting 3-pump Heater (Heater Output 2):")
     # COMMENTED OUT: gl7_controller.send_command("OUTMODE 2,3,0,0")
-    # COMMENTED OUT: gl7_controller.send_command("MOUT 2,75.0")
-    print("    → 3-pump Heater at 75% power")
+    # COMMENTED OUT: gl7_controller.send_command(f"MOUT 2,{power_3pump}")
+    print(f"    → 3-pump Heater at {power_3pump}% power")
     
     print("\nBoth pumps now heating...")
     print("Waiting for 3-head (Input A) and 4-head (Input C) to reach 4K...")
@@ -41,28 +65,12 @@ def execute_step3_test(gl7_controller):
     print(f"  4-head Temperature (Input C): {temp_4he_head} K")
     
     # Also read stage temperatures
-    temp_channel_2 = gl7_controller.send_command("KRDG? 2")  # 4K stage
-    temp_channel_3 = gl7_controller.send_command("KRDG? 3")  # 50K stage
+    temp_4k_stage = gl7_controller.read_temperature('D2')     # 4K stage (Input D2)
+    temp_50k_stage = gl7_controller.read_temperature('D3')    # 50K stage (Input D3)  
     temp_input_b = gl7_controller.read_temperature('B')       # Device stage
     
-    try:
-        if temp_channel_2 and temp_channel_2 != "T_OVER":
-            temp_4k_stage = float(temp_channel_2)
-        else:
-            temp_4k_stage = temp_channel_2
-    except ValueError:
-        temp_4k_stage = temp_channel_2
-        
-    try:
-        if temp_channel_3 and temp_channel_3 != "T_OVER":
-            temp_50k_stage = float(temp_channel_3)
-        else:
-            temp_50k_stage = temp_channel_3
-    except ValueError:
-        temp_50k_stage = temp_channel_3
-    
-    print(f"  4K Stage Temperature (Channel 2): {temp_4k_stage} K")
-    print(f"  50K Stage Temperature (Channel 3): {temp_50k_stage} K")
+    print(f"  4K Stage Temperature (Channel 2 (D2)): {temp_4k_stage} K")
+    print(f"  50K Stage Temperature (Channel 3 (D3)): {temp_50k_stage} K")
     print(f"  Device Stage Temperature (Input B): {temp_input_b} K")
     
     # 3-pump temperature (Input D)
@@ -105,6 +113,10 @@ def execute_step3_test(gl7_controller):
         print(f"  3-pump Heater (Output 2): Mode={mode_2}, Output={output_2}")
     
     print("→ Ready to proceed to 4-pump Heater transition")
+    
+    print(f"\nStep 3 Summary:")
+    print(f"  4-pump Heater set to: {power_4pump}% power")
+    print(f"  3-pump Heater set to: {power_3pump}% power")
     
     # User confirmation before proceeding to Step 4
     input("\nPress ENTER to confirm heads have reached 4K and proceed to Step 4, 4-pump Transition ...")
