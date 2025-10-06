@@ -48,6 +48,15 @@ def main():
     parser.add_argument("--heaters-query", action="store_true", help="Query current heater status")
     parser.add_argument("--heaters-stop", action="store_true", help="EMERGENCY HEATER STOP: Immediately shut down both heaters")
 
+    # Heat switch control arguments
+    parser.add_argument("--switches", nargs=2, metavar=('SWITCH', 'STATE'), help="Set heat switch: --switches <switch_num> <ON/OFF>")
+    parser.add_argument("--switches-both", type=str, choices=['ON', 'OFF', 'on', 'off'], help="Set both switches to same state: --switches-both ON/OFF")
+    parser.add_argument("--switches-query", action="store_true", help="Query current heat switch status")
+
+    # Display control arguments
+    parser.add_argument("--display", action="store_true", help="Check Lakeshore 350 front panel display status")
+    parser.add_argument("--set-name", nargs=2, metavar=('INPUT', 'NAME'), help="Set custom input name: --set-name <input> <name>")
+
     
     args = parser.parse_args()
     
@@ -58,7 +67,9 @@ def main():
                 args.start_gl7_test_sequence, args.gl7_step1_test, args.gl7_step2a_test,
                 args.gl7_step2b_test, args.gl7_step3_test, args.gl7_step4_test,
                 args.gl7_step5_test, args.gl7_step6_test,
-                args.heaters, args.heaters_both, args.heaters_query, args.heaters_stop]):
+                args.heaters, args.heaters_both, args.heaters_query, args.heaters_stop,
+                args.switches, args.switches_both, args.switches_query,
+                args.display, args.set_name]):
         args.all_inputs = True
     
     try:
@@ -344,6 +355,94 @@ def main():
                     print("Error: Invalid arguments for --heaters. Use: --heaters <output_num> <power_percent>")
                     return
         
+        # Heat switch control handling
+        if args.switches or args.switches_both or args.switches_query:
+            from .switches import set_switch_state, query_switch_status
+            import time
+            
+            if args.switches_query:
+                # Query mode - just show current status
+                print("\nCurrent Heat Switch Status:")
+                query_switch_status(gl7_controller, 3)  # 4-switch
+                query_switch_status(gl7_controller, 4)  # 3-switch
+                
+            elif args.switches_both:
+                # Set both switches
+                state = args.switches_both.upper()
+                set_switch_state(gl7_controller, 3, state)  # 4-switch
+                set_switch_state(gl7_controller, 4, state)  # 3-switch
+                
+                # Wait a moment for commands to take effect
+                time.sleep(1)
+                
+                # Show status of both switches
+                query_switch_status(gl7_controller, 3)  # 4-switch
+                query_switch_status(gl7_controller, 4)  # 3-switch
+                    
+            elif args.switches:
+                # Set single switch
+                try:
+                    switch_num = int(args.switches[0])
+                    state = args.switches[1].upper()
+                    
+                    if switch_num not in [3, 4]:
+                        print("Error: Switch number must be 3 (for 4-switch) or 4 (for 3-switch)")
+                        return
+                    if state not in ['ON', 'OFF']:
+                        print("Error: State must be ON or OFF")
+                        return
+                    
+                    set_switch_state(gl7_controller, switch_num, state)
+                    
+                    # Wait a moment for commands to take effect
+                    time.sleep(1)
+                    
+                    # Show status of both switches
+                    query_switch_status(gl7_controller, 3)  # 4-switch
+                    query_switch_status(gl7_controller, 4)  # 3-switch
+                        
+                except (ValueError, IndexError):
+                    print("Error: Invalid arguments for --switches. Use: --switches <switch_num> <ON/OFF>")
+                    return
+        
+        # Display control handling
+        if args.display:
+            from .lakeshore_display import check_front_panel_display
+            check_front_panel_display(gl7_controller=gl7_controller)
+        
+        # Set input name handling
+        if args.set_name:
+            import time
+            
+            input_name = args.set_name[0].upper()
+            custom_name = args.set_name[1]
+            
+            # Validate input name
+            valid_inputs = ['A', 'B', 'C', 'D', 'D2', 'D3', 'D4', 'D5']
+            if input_name not in valid_inputs:
+                print(f"Error: Input must be one of {valid_inputs}")
+                return
+            
+            # Validate name length (Lakeshore 350 has a character limit)
+            if len(custom_name) > 15:
+                print("Error: Name must be 15 characters or less")
+                return
+            
+            print(f"Setting {input_name} name to \"{custom_name}\"")
+            
+            try:
+                # Set the custom name
+                gl7_controller.send_command(f'INNAME {input_name},"{custom_name}"')
+                
+                # Wait a moment for the command to take effect
+                time.sleep(0.5)
+                
+                # Verify the change
+                new_name = gl7_controller.send_command(f'INNAME? {input_name}')
+                print(f"Confirmed: {input_name} = \"{new_name}\"")
+                
+            except Exception as e:
+                print(f"Error setting input name: {e}")
 
     
     except serial.SerialException as e:
