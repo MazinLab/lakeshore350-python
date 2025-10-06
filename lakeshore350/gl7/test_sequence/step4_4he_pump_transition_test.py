@@ -4,6 +4,8 @@ GL7 Step 4: 4He Pump Transition
 """
 
 import time
+from ...head3_calibration import convert_3head_resistance_to_temperature
+from ...head4_calibration import convert_4head_resistance_to_temperature
 
 def execute_step4_test(gl7_controller):
     """Execute GL7 Step 4: 4He Pump Transition"""
@@ -14,15 +16,25 @@ def execute_step4_test(gl7_controller):
     print("Temperature Check:")
     
     # Check head temperatures
-    pre_temp_3he = gl7_controller.read_temperature('A')  # 3-head
-    pre_temp_4he = gl7_controller.read_temperature('C')  # 4-head
+    # 3He Head - read resistance and convert to temperature (Input A)
+    resistance_3he_head = gl7_controller.read_temperature('A')
+    if isinstance(resistance_3he_head, float) and resistance_3he_head > 0:
+        temp_3he_head = convert_3head_resistance_to_temperature(resistance_3he_head)
+        print(f"  3-head Temperature (Input A): {temp_3he_head:.3f} K")
+    else:
+        print(f"  3-head Temperature (Input A): Unable to read sensor")
+    
+    # 4He Head - read resistance and convert to temperature (Input C)
+    resistance_4he_head = gl7_controller.read_temperature('C')
+    if isinstance(resistance_4he_head, float) and resistance_4he_head > 0:
+        temp_4he_head = convert_4head_resistance_to_temperature(resistance_4he_head)
+        print(f"  4-head Temperature (Input C): {temp_4he_head:.3f} K")
+    else:
+        print(f"  4-head Temperature (Input C): Unable to read sensor")
     
     # Check stage temperatures
     pre_4k_stage = gl7_controller.read_temperature('D2')   # 4K stage (Input D2)
     pre_50k_stage = gl7_controller.read_temperature('D3')  # 50K stage (Input D3)
-    
-    print(f"  3-head Temperature (Input A): {pre_temp_3he} K")
-    print(f"  4-head Temperature (Input C): {pre_temp_4he} K")
     print(f"  4K Stage Temperature (Channel 2 (D2)): {pre_4k_stage} K")
     print(f"  50K Stage Temperature (Channel 3 (D3)): {pre_50k_stage} K")
     

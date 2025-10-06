@@ -22,11 +22,35 @@ class GL7Controller:
         self.analog_heat_switches = {3: "4-switch", 4: "3-switch"}
 
     def read_temperature(self, input_channel):
-        """Read temperature from specified input (A, B, C, D)"""
+        """Read temperature from specified input (A, B, C, D)
+        For GL7 3-head (A) and 4-head (C), returns resistance in ohms.
+        For other inputs, returns temperature in Kelvin.
+        """
         input_map = {'A': 1, 'B': 2, 'C': 3, 'D': 4}
         if input_channel.upper() in input_map:
             channel_num = input_map[input_channel.upper()]
-            response = self.send_command(f"KRDG? {channel_num}")
+            
+            # For GL7 3-head (A) and 4-head (C), read resistance instead of temperature
+            if input_channel.upper() in ['A', 'C']:
+                response = self.send_command(f"SRDG? {channel_num}")
+            else:
+                response = self.send_command(f"KRDG? {channel_num}")
+                
+            try:
+                if response and response != "T_OVER":
+                    return float(response)
+                else:
+                    return response
+            except ValueError:
+                return response
+        return None
+    
+    def read_resistance(self, input_channel):
+        """Read resistance from specified input (A, B, C, D)"""
+        input_map = {'A': 1, 'B': 2, 'C': 3, 'D': 4}
+        if input_channel.upper() in input_map:
+            channel_num = input_map[input_channel.upper()]
+            response = self.send_command(f"SRDG? {channel_num}")
             try:
                 if response and response != "T_OVER":
                     return float(response)

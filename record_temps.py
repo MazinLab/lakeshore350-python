@@ -14,6 +14,8 @@ import sys
 sys.path.append('/home/kids/lakeshore350-python')
 
 from lakeshore350.temperature import TemperatureReader
+from lakeshore350.head3_calibration import convert_3head_resistance_to_temperature
+from lakeshore350.head4_calibration import convert_4head_resistance_to_temperature
 
 class TemperatureRecorder:
     def __init__(self):
@@ -40,15 +42,17 @@ class TemperatureRecorder:
             "4K_Stage_Temp_K",
             "50K_Stage_Temp_K", 
             "Device_Stage_Temp_K",
+            "3_Head_Res_Ohm",
             "3_Head_Temp_K",
+            "4_Head_Res_Ohm",
             "4_Head_Temp_K",
             "3_Pump_Temp_K",
             "4_Pump_Temp_K"
         ]
         
         # Define column widths for nice formatting (adjusted for proper alignment)
-        # Timestamp, Date, Time, 4K_Stage, 50K_Stage, Device_Stage, 3_Head, 4_Head, 3_Pump, 4_Pump
-        self.column_widths = [28, 12, 12, 17, 17, 20, 16, 16, 16, 16]
+        # Timestamp, Date, Time, 4K_Stage, 50K_Stage, Device_Stage, 3_Head_Res, 3_Head_Temp, 4_Head_Res, 4_Head_Temp, 3_Pump, 4_Pump
+        self.column_widths = [28, 12, 12, 17, 17, 20, 18, 16, 18, 16, 16, 16]
         
         # Don't print header yet - will be done in run() method
         
@@ -86,8 +90,21 @@ class TemperatureRecorder:
         """Print nicely formatted data row to terminal"""
         formatted_line = ""
         for i, value in enumerate(data_row):
-            # Format numbers to 2 decimal places if they're floats
-            if isinstance(value, float):
+            # Special formatting for different columns
+            if i == 6 and isinstance(value, float):
+                # 3-head resistance (4 decimal places)
+                formatted_value = f"{value:.4f}"
+            elif i == 7 and isinstance(value, float):
+                # 3-head temperature (3 decimal places)
+                formatted_value = f"{value:.3f}"
+            elif i == 8 and isinstance(value, float):
+                # 4-head resistance (4 decimal places)
+                formatted_value = f"{value:.4f}"
+            elif i == 9 and isinstance(value, float):
+                # 4-head temperature (3 decimal places)
+                formatted_value = f"{value:.3f}"
+            elif isinstance(value, float):
+                # Other numbers (2 decimal places)
                 formatted_value = f"{value:.2f}"
             else:
                 formatted_value = str(value)
@@ -120,11 +137,23 @@ class TemperatureRecorder:
             # Device Stage (Input B)
             temp_device = self.temp_reader.read_temperature('B')
             
-            # 3-head temperature (Input A)
-            temp_3_head = self.temp_reader.read_temperature('A')
+            # 3-head resistance (Input A) and calibrated temperature
+            resistance_3_head = self.temp_reader.read_temperature('A')
             
-            # 4-head temperature (Input C)
-            temp_4_head = self.temp_reader.read_temperature('C')
+            # Convert 3-head resistance to temperature using calibration
+            if isinstance(resistance_3_head, float) and resistance_3_head > 0:
+                temp_3_head = convert_3head_resistance_to_temperature(resistance_3_head)
+            else:
+                temp_3_head = None
+            
+            # 4-head resistance (Input C) and calibrated temperature
+            resistance_4_head = self.temp_reader.read_temperature('C')
+            
+            # Convert 4-head resistance to temperature using calibration
+            if isinstance(resistance_4_head, float) and resistance_4_head > 0:
+                temp_4_head = convert_4head_resistance_to_temperature(resistance_4_head)
+            else:
+                temp_4_head = None
             
             # 3-pump temperature (Input D)
             temp_3_pump = self.temp_reader.read_temperature('D')
@@ -143,7 +172,9 @@ class TemperatureRecorder:
                 "temp_4k": temp_4k_val,
                 "temp_50k": temp_50k_val,
                 "temp_device": temp_device,
+                "resistance_3_head": resistance_3_head,
                 "temp_3_head": temp_3_head,
+                "resistance_4_head": resistance_4_head,
                 "temp_4_head": temp_4_head,
                 "temp_3_pump": temp_3_pump,
                 "temp_4_pump": temp_4_pump_val
@@ -163,7 +194,9 @@ class TemperatureRecorder:
                 data["temp_4k"],
                 data["temp_50k"],
                 data["temp_device"],
+                data["resistance_3_head"],
                 data["temp_3_head"],
+                data["resistance_4_head"],
                 data["temp_4_head"],
                 data["temp_3_pump"],
                 data["temp_4_pump"]
@@ -205,8 +238,21 @@ class TemperatureRecorder:
                 # Write formatted data row
                 formatted_line = ""
                 for i, value in enumerate(data_row):
-                    # Format numbers to 2 decimal places if they're floats
-                    if isinstance(value, float):
+                    # Special formatting for different columns
+                    if i == 6 and isinstance(value, float):
+                        # 3-head resistance (4 decimal places)
+                        formatted_value = f"{value:.4f}"
+                    elif i == 7 and isinstance(value, float):
+                        # 3-head temperature (3 decimal places)
+                        formatted_value = f"{value:.3f}"
+                    elif i == 8 and isinstance(value, float):
+                        # 4-head resistance (4 decimal places)
+                        formatted_value = f"{value:.4f}"
+                    elif i == 9 and isinstance(value, float):
+                        # 4-head temperature (3 decimal places)
+                        formatted_value = f"{value:.3f}"
+                    elif isinstance(value, float):
+                        # Other numbers (2 decimal places)
                         formatted_value = f"{value:.2f}"
                     else:
                         formatted_value = str(value)

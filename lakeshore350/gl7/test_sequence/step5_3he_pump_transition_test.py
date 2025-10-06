@@ -4,6 +4,8 @@ GL7 Step 5: 3He Pump Transition
 """
 
 import time
+from ...head3_calibration import convert_3head_resistance_to_temperature
+from ...head4_calibration import convert_4head_resistance_to_temperature
 
 def execute_step5_test(gl7_controller):
     """Execute GL7 Step 5: Cooling to 2K and 3He Pump Transition"""
@@ -16,16 +18,28 @@ def execute_step5_test(gl7_controller):
     print("\nTemperature Check:")
     targets_at_2k = []
     
-    # Read all relevant temperatures
-    temp_3he_head = gl7_controller.read_temperature('A')  # 3He Head
-    temp_4he_head = gl7_controller.read_temperature('C')  # 4He Head
+    # Read all relevant temperatures and resistances
+    # 3He Head - read resistance and convert to temperature (Input A)
+    resistance_3he_head = gl7_controller.read_temperature('A')
+    if isinstance(resistance_3he_head, float) and resistance_3he_head > 0:
+        temp_3he_head = convert_3head_resistance_to_temperature(resistance_3he_head)
+        print(f"  3-head Temperature (Input A): {temp_3he_head:.3f} K")
+    else:
+        temp_3he_head = None
+        print(f"  3-head Temperature (Input A): Unable to read sensor")
+    
+    # 4He Head - read resistance and convert to temperature (Input C)
+    resistance_4he_head = gl7_controller.read_temperature('C')
+    if isinstance(resistance_4he_head, float) and resistance_4he_head > 0:
+        temp_4he_head = convert_4head_resistance_to_temperature(resistance_4he_head)
+        print(f"  4-head Temperature (Input C): {temp_4he_head:.3f} K")
+    else:
+        temp_4he_head = None
+        print(f"  4-head Temperature (Input C): Unable to read sensor")
     
     # Read stage temperatures
     temp_4k_stage = gl7_controller.read_temperature('D2')   # 4K stage (Input D2)
     temp_50k_stage = gl7_controller.read_temperature('D3')  # 50K stage (Input D3)
-    
-    print(f"  3-head Temperature (Input A): {temp_3he_head} K")
-    print(f"  4-head Temperature (Input C): {temp_4he_head} K")
     print(f"  4K Stage Temperature (Channel 2 (D2)): {temp_4k_stage} K")
     print(f"  50K Stage Temperature (Channel 3 (D3)): {temp_50k_stage} K")
     
@@ -44,19 +58,22 @@ def execute_step5_test(gl7_controller):
         temp_4pump_val = temp_4pump
     print(f"  4-pump Temperature (Channel 5): {temp_4pump_val} K")
     
-    # Check if 3He head and 4He head have reached 2K (for logic only)
+    # Check if heads have reached 2K using calibrated temperatures
     targets_at_2k = []
-    if isinstance(temp_3he_head, float) and temp_3he_head <= 2.0:
+    if temp_3he_head is not None and temp_3he_head <= 2.0:
         targets_at_2k.append("3He Head")
-    if isinstance(temp_4he_head, float) and temp_4he_head <= 2.0:
+    if temp_4he_head is not None and temp_4he_head <= 2.0:
         targets_at_2k.append("4He Head")
     
     # Temperature assessment for transition
     print(f"\nStep 5 Assessment:")
-    if len(targets_at_2k) == 2:
-        print("✓ 3-head and 4-head have reached 2K")
+    if len(targets_at_2k) >= 1:
+        if "3He Head" in targets_at_2k:
+            print("✓ 3-head has reached 2K (calibrated temperature)")
+        if "4He Head" in targets_at_2k:
+            print("✓ 4-head has reached 2K (calibrated temperature)")
     else:
-        print("→ Targets still cooling (advancing for test demonstration)")
+        print("→ Heads still cooling (advancing for test demonstration)")
     print("→ Ready to proceed to 3-pump transition")
     
     print("\n" + "-" * 30)

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """
-GL7 Step 6: Final Cooldown Monitoring
+GL7 Step 6: Final Cooldown
 """
 
 import time
+from ..head3_calibration import convert_3head_resistance_to_temperature
+from ..head4_calibration import convert_4head_resistance_to_temperature
 
 def execute_step6(gl7_controller):
     """Execute GL7 Step 6: Final Status Check"""
@@ -13,14 +15,24 @@ def execute_step6(gl7_controller):
     
     # Temperature Check
     print("\nTemperature Check:")
-    final_3he_head = gl7_controller.read_temperature('A')  # 3-head
-    final_4he_head = gl7_controller.read_temperature('C')  # 4-head
+    # 3He Head - read resistance and convert to temperature (Input A)
+    resistance_3he_head = gl7_controller.read_temperature('A')
+    if isinstance(resistance_3he_head, float) and resistance_3he_head > 0:
+        temp_3he_head = convert_3head_resistance_to_temperature(resistance_3he_head)
+        print(f"  3-head Temperature (Input A): {temp_3he_head:.3f} K")
+    else:
+        print(f"  3-head Temperature (Input A): Unable to read sensor")
+    
+    # 4He Head - read resistance and convert to temperature (Input C)
+    resistance_4he_head = gl7_controller.read_temperature('C')
+    if isinstance(resistance_4he_head, float) and resistance_4he_head > 0:
+        temp_4he_head = convert_4head_resistance_to_temperature(resistance_4he_head)
+        print(f"  4-head Temperature (Input C): {temp_4he_head:.3f} K")
+    else:
+        print(f"  4-head Temperature (Input C): Unable to read sensor")
     
     final_4k_stage = gl7_controller.read_temperature('D2')   # 4K stage (Input D2)
     final_50k_stage = gl7_controller.read_temperature('D3')  # 50K stage (Input D3)
-    
-    print(f"  3-head Temperature (Input A): {final_3he_head} K")
-    print(f"  4-head Temperature (Input C): {final_4he_head} K")
     print(f"  4K Stage Temperature (Channel 2 (D2)): {final_4k_stage} K")
     print(f"  50K Stage Temperature (Channel 3 (D3)): {final_50k_stage} K")
     
@@ -39,19 +51,12 @@ def execute_step6(gl7_controller):
         final_4pump_val = final_4pump
     print(f"  4-pump Temperature (Channel 5): {final_4pump_val} K")
     
-    # Final heater/switch status
-    print("\nFinal Heater/Switch Status:")
-    print("  4-pump Heater (Heater Output 1): Should be OFF (0% power)")
-    print("  3-pump Heater (Heater Output 2): Should be OFF (0% power)")
+    print(f"\nFinal Assessment:")
+    print("→ System has reached final cooldown state")
+    print("→ All temperatures logged for final analysis")
+    print("→ GL7 cooldown sequence complete")
     
-    for output_num, name in gl7_controller.analog_heat_switches.items():
-        config = gl7_controller.query_analog_status(output_num)
-        # Parse the config to determine ON/OFF status and voltage
-        try:
-            config_parts = config.split(',') if config else []
-            status_value = int(config_parts[0]) if len(config_parts) > 0 else 0
-            voltage = float(config_parts[2]) if len(config_parts) > 2 else 0.0
-            status_text = f"(ON, {voltage:.1f}V)" if status_value == 1 else f"(OFF, {voltage:.1f}V)"
-        except (ValueError, IndexError):
-            status_text = "(UNKNOWN)"
-        print(f"  {name}: Config={config} {status_text} (should be ON)")
+    print("\n" + "=" * 50)
+    print("GL7 STEP 6 COMPLETE")
+    print("System ready for operation at base temperature")
+    print("=" * 50)

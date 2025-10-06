@@ -4,6 +4,8 @@ GL7 Step 1: Initial Status Check
 """
 
 import time
+from ..head3_calibration import convert_3head_resistance_to_temperature
+from ..head4_calibration import convert_4head_resistance_to_temperature
 
 def execute_step1(gl7_controller):
     """Execute GL7 Step 1: Initial Status Check"""
@@ -11,11 +13,23 @@ def execute_step1(gl7_controller):
     print("-" * 35)
     
     # Check starting temperatures at specific measurement points
-    # 3He Head temperature (Input A)
-    temp_3he_head = gl7_controller.read_temperature('A')
+    # 3He Head - read resistance and convert to temperature (Input A)
+    resistance_3he_head = gl7_controller.read_temperature('A')
     
-    # 4He Head temperature (Input C)
-    temp_4he_head = gl7_controller.read_temperature('C')
+    # Convert 3-head resistance to temperature using calibration
+    if isinstance(resistance_3he_head, float) and resistance_3he_head > 0:
+        temp_3he_head = convert_3head_resistance_to_temperature(resistance_3he_head)
+    else:
+        temp_3he_head = None
+    
+    # 4He Head - read resistance and convert to temperature (Input C)
+    resistance_4he_head = gl7_controller.read_temperature('C')
+    
+    # Convert 4-head resistance to temperature using calibration
+    if isinstance(resistance_4he_head, float) and resistance_4he_head > 0:
+        temp_4he_head = convert_4head_resistance_to_temperature(resistance_4he_head)
+    else:
+        temp_4he_head = None
     
     # 4K stage temperature (Input D2)
     temp_4k_stage = gl7_controller.read_temperature('D2')
@@ -40,8 +54,15 @@ def execute_step1(gl7_controller):
         temp_4pump_val = temp_4pump
     
 
-    print(f"3-head Temperature (Input A): {temp_3he_head} K")
-    print(f"4-head Temperature (Input C): {temp_4he_head} K")
+    if temp_3he_head is not None:
+        print(f"3-head Temperature (Input A): {temp_3he_head:.3f} K")
+    else:
+        print(f"3-head Temperature (Input A): Unable to read sensor")
+    
+    if temp_4he_head is not None:
+        print(f"4-head Temperature (Input C): {temp_4he_head:.3f} K")
+    else:
+        print(f"4-head Temperature (Input C): Unable to read sensor")
     print(f"4K Stage Temperature (Channel 2 (D2)): {temp_4k_stage} K")
     print(f"50K Stage Temperature (Channel 3 (D3)): {temp_50k_stage} K")
     print(f"Device Stage Temperature (Input B): {temp_device} K")

@@ -4,6 +4,8 @@ GL7 Step 2A: Pre-cooling Phase
 """
 
 import time
+from ...head3_calibration import convert_3head_resistance_to_temperature
+from ...head4_calibration import convert_4head_resistance_to_temperature
 
 def execute_step2a_test(gl7_controller):
     """Execute GL7 Step 2a: Pre-cooling from room temperature to ~4K"""
@@ -26,11 +28,19 @@ def execute_step2a_test(gl7_controller):
     print("Temperature Check:")
     heads_at_10k = []
     
-    # Read 3He Head temperature (Input A)
-    temp_3he_head = gl7_controller.read_temperature('A')
+    # Read 3He Head - read resistance and convert to temperature (Input A)
+    resistance_3he_head = gl7_controller.read_temperature('A')
+    if isinstance(resistance_3he_head, float) and resistance_3he_head > 0:
+        temp_3he_head = convert_3head_resistance_to_temperature(resistance_3he_head)
+    else:
+        temp_3he_head = None
     
-    # Read 4He Head temperature (Input C)  
-    temp_4he_head = gl7_controller.read_temperature('C')
+    # Read 4He Head - read resistance and convert to temperature (Input C)
+    resistance_4he_head = gl7_controller.read_temperature('C')
+    if isinstance(resistance_4he_head, float) and resistance_4he_head > 0:
+        temp_4he_head = convert_4head_resistance_to_temperature(resistance_4he_head)
+    else:
+        temp_4he_head = None
     
     # 4K stage temperature (Input D2)
     temp_4k_stage = gl7_controller.read_temperature('D2')
@@ -50,8 +60,15 @@ def execute_step2a_test(gl7_controller):
     except ValueError:
         temp_4pump_val = temp_4pump
 
-    print(f"  3-head Temperature (Input A): {temp_3he_head} K")
-    print(f"  4-head Temperature (Input C): {temp_4he_head} K")
+    if temp_3he_head is not None:
+        print(f"  3-head Temperature (Input A): {temp_3he_head:.3f} K")
+    else:
+        print(f"  3-head Temperature (Input A): Unable to read sensor")
+    
+    if temp_4he_head is not None:
+        print(f"  4-head Temperature (Input C): {temp_4he_head:.3f} K")
+    else:
+        print(f"  4-head Temperature (Input C): Unable to read sensor")
     print(f"  4K Stage Temperature (Channel 2 (D2)): {temp_4k_stage} K")
     print(f"  50K Stage Temperature (Channel 3 (D3)): {temp_50k_stage} K")
     print(f"  3-pump Temperature (Input D): {temp_3pump} K")

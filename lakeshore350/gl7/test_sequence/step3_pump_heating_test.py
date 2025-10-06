@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """
-GL7 Step 3: Pump Heating Phase
+GL7 Step 3: Pump Heating (Test Version)
 """
 
 import time
+from ...head3_calibration import convert_3head_resistance_to_temperature
+from ...head4_calibration import convert_4head_resistance_to_temperature
 
 def execute_step3_test(gl7_controller):
     """Execute GL7 Step 3: Pump Heating Phase (45-55K)"""
@@ -57,12 +59,23 @@ def execute_step3_test(gl7_controller):
     # Single temperature check for demonstration
     print(f"\nTemperature Check:")
     
-    # Read head thermometers
-    temp_3he_head = gl7_controller.read_temperature('A')  # 3-head
-    temp_4he_head = gl7_controller.read_temperature('C')  # 4-head
+    # Read 3-head resistance and convert to temperature
+    resistance_3he_head = gl7_controller.read_temperature('A')
+    if isinstance(resistance_3he_head, float) and resistance_3he_head > 0:
+        temp_3he_head = convert_3head_resistance_to_temperature(resistance_3he_head)
+        print(f"  3-head Temperature (Input A): {temp_3he_head:.3f} K")
+    else:
+        temp_3he_head = None
+        print(f"  3-head Temperature (Input A): Unable to read sensor")
     
-    print(f"  3-head Temperature (Input A): {temp_3he_head} K")
-    print(f"  4-head Temperature (Input C): {temp_4he_head} K")
+    # Read 4-head resistance and convert to temperature
+    resistance_4he_head = gl7_controller.read_temperature('C')
+    if isinstance(resistance_4he_head, float) and resistance_4he_head > 0:
+        temp_4he_head = convert_4head_resistance_to_temperature(resistance_4he_head)
+        print(f"  4-head Temperature (Input C): {temp_4he_head:.3f} K")
+    else:
+        temp_4he_head = None
+        print(f"  4-head Temperature (Input C): Unable to read sensor")
     
     # Also read stage temperatures
     temp_4k_stage = gl7_controller.read_temperature('D2')     # 4K stage (Input D2)
@@ -88,12 +101,12 @@ def execute_step3_test(gl7_controller):
         temp_4pump_val = temp_4pump
     print(f"  4-pump Temperature (Channel 5): {temp_4pump_val} K")
     
-    # Check if heads have reached 4K (for assessment logic only)
+    # Check if heads have reached 4K using calibrated temperatures
     heads_at_4k = []
-    if isinstance(temp_3he_head, float) and temp_3he_head <= 4.0:
+    if temp_3he_head is not None and temp_3he_head <= 4.0:
         heads_at_4k.append("3He")
-    if isinstance(temp_4he_head, float) and temp_4he_head <= 4.0:
-        heads_at_4k.append("4-head")
+    if temp_4he_head is not None and temp_4he_head <= 4.0:
+        heads_at_4k.append("4He")
 
     
     # Check current heater status
