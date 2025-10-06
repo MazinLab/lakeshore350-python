@@ -69,6 +69,38 @@ class TemperatureReader:
                 return "R_OVER"
             return response  # Return as-is if it's some other message
 
+    def read_voltage(self, input_or_channel):
+        """
+        Read voltage from a specific input or channel
+        Inputs: A, B, C, D (temperature sensor inputs)
+        Returns voltage in volts
+        """
+        # For voltage readings, we use input letters directly
+        if isinstance(input_or_channel, str) and input_or_channel.upper() in ['A', 'B', 'C', 'D']:
+            input_letter = input_or_channel.upper()
+        else:
+            # For numbered inputs, map back to letters
+            input_map = {1: 'A', 2: 'B', 3: 'C', 4: 'D'}
+            input_letter = input_map.get(input_or_channel, str(input_or_channel))
+        
+        response = self.send_command(f"VRDG? {input_letter}")
+        
+        if response is None or response == "":
+            return "NO_RESPONSE"
+        
+        # Handle over-range conditions
+        if len(response) > 15 or '`' in response or '\x00' in response:
+            return "V_OVER"
+        
+        # Try to parse as float
+        try:
+            return float(response)
+        except ValueError:
+            # Check for over-range indicators
+            if any(indicator in response.upper() for indicator in ['OVER', 'V.', 'V_']):
+                return "V_OVER"
+            return response  # Return as-is if it's some other message
+
     def read_temperature(self, input_or_channel):
         """
         Read temperature from a specific input or channel

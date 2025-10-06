@@ -6,6 +6,7 @@ GL7 Step 6: Final Cooldown Monitoring
 import time
 from ...head3_calibration import convert_3head_resistance_to_temperature
 from ...head4_calibration import convert_4head_resistance_to_temperature
+from ...pump_calibration import convert_pump_voltage_to_temperature
 
 def execute_step6_test(gl7_controller):
     """Execute GL7 Step 6: Final Status Check"""
@@ -36,20 +37,31 @@ def execute_step6_test(gl7_controller):
     print(f"  4K Stage Temperature (Channel 2 (D2)): {final_4k_stage} K")
     print(f"  50K Stage Temperature (Channel 3 (D3)): {final_50k_stage} K")
     
-    # 3-pump temperature (Input D)
-    final_3pump = gl7_controller.read_temperature('D')
-    print(f"  3-pump Temperature (Input D): {final_3pump} K")
+    # 3-pump temperature - read voltage and convert to temperature (Input D)
+    voltage_3pump = gl7_controller.read_voltage('D')
     
-    # 4-pump temperature (Channel 5)
-    final_4pump = gl7_controller.send_command("KRDG? 5")
+    # Convert 3-pump voltage to temperature using calibration
+    if isinstance(voltage_3pump, float) and voltage_3pump > 0:
+        final_3pump = convert_pump_voltage_to_temperature(voltage_3pump)
+        print(f"  3-pump Temperature (Input D): {final_3pump:.3f} K")
+    else:
+        final_3pump = None
+        print(f"  3-pump Temperature (Input D): Unable to read sensor")
+    
+    # 4-pump temperature - read voltage from channel 5 and convert to temperature
+    voltage_4pump_response = gl7_controller.send_command("VRDG? 5")
+    
     try:
-        if final_4pump and final_4pump != "T_OVER":
-            final_4pump_val = float(final_4pump)
+        if voltage_4pump_response and voltage_4pump_response != "V_OVER":
+            voltage_4pump = float(voltage_4pump_response)
+            final_4pump = convert_pump_voltage_to_temperature(voltage_4pump)
+            print(f"  4-pump Temperature (Channel 5): {final_4pump:.3f} K")
         else:
-            final_4pump_val = final_4pump
+            final_4pump = None
+            print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
     except ValueError:
-        final_4pump_val = final_4pump
-    print(f"  4-pump Temperature (Channel 5): {final_4pump_val} K")
+        final_4pump = None
+        print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
     
     # Final heater/switch status
     print("\nFinal Heater/Switch Status:")

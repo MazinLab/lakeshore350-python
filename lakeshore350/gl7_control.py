@@ -59,6 +59,21 @@ class GL7Controller:
             except ValueError:
                 return response
         return None
+
+    def read_voltage(self, input_channel):
+        """Read voltage from specified input (A, B, C, D)"""
+        input_map = {'A': 1, 'B': 2, 'C': 3, 'D': 4}
+        if input_channel.upper() in input_map:
+            channel_num = input_map[input_channel.upper()]
+            response = self.send_command(f"VRDG? {channel_num}")
+            try:
+                if response and response != "V_OVER":
+                    return float(response)
+                else:
+                    return response
+            except ValueError:
+                return response
+        return None
     
     def query_relay_status(self, relay_num):
         """Query relay heater status"""

@@ -4,6 +4,9 @@ GL7 Step 3: Pump Heating Phase
 """
 
 import time
+from ..head3_calibration import convert_3head_resistance_to_temperature
+from ..head4_calibration import convert_4head_resistance_to_temperature
+from ..pump_calibration import convert_pump_voltage_to_temperature
 
 def execute_step3(gl7_controller):
     """Execute GL7 Step 3: Pump Heating Phase (45-55K)"""
@@ -57,12 +60,33 @@ def execute_step3(gl7_controller):
     # Single temperature check for demonstration
     print(f"\nTemperature Check:")
     
-    # Read head thermometers
-    temp_3he_head = gl7_controller.read_temperature('A')  # 3-head
-    temp_4he_head = gl7_controller.read_temperature('C')  # 4-head
+    # Read 3He Head resistance and convert to temperature (Input A)
+    resistance_3he_head = gl7_controller.read_temperature('A')
     
-    print(f"  3-head Temperature (Input A): {temp_3he_head} K")
-    print(f"  4-head Temperature (Input C): {temp_4he_head} K")
+    # Convert 3-head resistance to temperature using calibration
+    if isinstance(resistance_3he_head, float) and resistance_3he_head > 0:
+        temp_3he_head = convert_3head_resistance_to_temperature(resistance_3he_head)
+    else:
+        temp_3he_head = None
+    
+    # Read 4He Head resistance and convert to temperature (Input C)
+    resistance_4he_head = gl7_controller.read_temperature('C')
+    
+    # Convert 4-head resistance to temperature using calibration
+    if isinstance(resistance_4he_head, float) and resistance_4he_head > 0:
+        temp_4he_head = convert_4head_resistance_to_temperature(resistance_4he_head)
+    else:
+        temp_4he_head = None
+    
+    if temp_3he_head is not None:
+        print(f"  3-head Temperature (Input A): {temp_3he_head:.3f} K")
+    else:
+        print(f"  3-head Temperature (Input A): Unable to read sensor")
+    
+    if temp_4he_head is not None:
+        print(f"  4-head Temperature (Input C): {temp_4he_head:.3f} K")
+    else:
+        print(f"  4-head Temperature (Input C): Unable to read sensor")
     
     # Also read stage temperatures
     temp_4k_stage = gl7_controller.read_temperature('D2')     # 4K stage (Input D2)
@@ -73,26 +97,44 @@ def execute_step3(gl7_controller):
     print(f"  50K Stage Temperature (Channel 3 (D3)): {temp_50k_stage} K")
     print(f"  Device Stage Temperature (Input B): {temp_input_b} K")
     
-    # 3-pump temperature (Input D)
-    temp_3pump = gl7_controller.read_temperature('D')
-    print(f"  3-pump Temperature (Input D): {temp_3pump} K")
+    # 3-pump temperature - read voltage and convert to temperature (Input D)
+    voltage_3pump = gl7_controller.read_voltage('D')
     
-    # 4-pump temperature (Channel 5)
-    temp_4pump = gl7_controller.send_command("KRDG? 5")
+    # Convert 3-pump voltage to temperature using calibration
+    if isinstance(voltage_3pump, float) and voltage_3pump > 0:
+        temp_3pump = convert_pump_voltage_to_temperature(voltage_3pump)
+    else:
+        temp_3pump = None
+    
+    if temp_3pump is not None:
+        print(f"  3-pump Temperature (Input D): {temp_3pump:.3f} K")
+    else:
+        print(f"  3-pump Temperature (Input D): Unable to read sensor")
+    
+    # 4-pump temperature - read voltage from channel 5 and convert to temperature
+    voltage_4pump_response = gl7_controller.send_command("VRDG? 5")
+    
     try:
-        if temp_4pump and temp_4pump != "T_OVER":
-            temp_4pump_val = float(temp_4pump)
+        if voltage_4pump_response and voltage_4pump_response != "V_OVER":
+            voltage_4pump = float(voltage_4pump_response)
+            temp_4pump = convert_pump_voltage_to_temperature(voltage_4pump)
         else:
-            temp_4pump_val = temp_4pump
+            voltage_4pump = None
+            temp_4pump = None
     except ValueError:
-        temp_4pump_val = temp_4pump
-    print(f"  4-pump Temperature (Channel 5): {temp_4pump_val} K")
+        voltage_4pump = None
+        temp_4pump = None
+    
+    if temp_4pump is not None:
+        print(f"  4-pump Temperature (Channel 5): {temp_4pump:.3f} K")
+    else:
+        print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
     
     # Check if heads have reached 4K (for assessment logic only)
     heads_at_4k = []
-    if isinstance(temp_3he_head, float) and temp_3he_head <= 4.0:
+    if temp_3he_head is not None and temp_3he_head <= 4.0:
         heads_at_4k.append("3He")
-    if isinstance(temp_4he_head, float) and temp_4he_head <= 4.0:
+    if temp_4he_head is not None and temp_4he_head <= 4.0:
         heads_at_4k.append("4-head")
 
     
