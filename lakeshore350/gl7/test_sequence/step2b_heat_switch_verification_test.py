@@ -40,12 +40,11 @@ def execute_step2b_test(gl7_controller):
     temp_50k_stage = gl7_controller.read_temperature('D3')
     print(f"  50K Stage Temperature (Channel 3 (D3)): {temp_50k_stage} K")
     
-    # 3-pump temperature - read voltage and convert to temperature (Input D)
-    voltage_3pump = gl7_controller.read_voltage('D')
+    # 3-pump temperature - read temperature directly (Input D)
+    temp_3pump = gl7_controller.read_temperature('D')
     
-    # Convert 3-pump voltage to temperature using calibration
-    if isinstance(voltage_3pump, float) and voltage_3pump > 0:
-        temp_3pump = convert_pump_voltage_to_temperature(voltage_3pump)
+    # Check if we got a valid temperature reading
+    if isinstance(temp_3pump, float) and temp_3pump > 0:
         print(f"  3-pump Temperature (Input D): {temp_3pump:.3f} K")
     else:
         print(f"  3-pump Temperature (Input D): Unable to read sensor")
@@ -66,11 +65,11 @@ def execute_step2b_test(gl7_controller):
     # Manual heat switch control (TEST MODE - COMMANDS COMMENTED OUT)
     print("Manual Heat Switch Control:")
     input("Press ENTER to turn OFF 4-switch...")
-    print("  → Turning OFF 4-switch (Analog 3 to 0V)")
+    print("  → Turning OFF 4-switch (Analog 3 to 0V) (TEST MODE - command not executed)")
     # COMMENTED OUT: gl7_controller.send_command("ANALOG 3,0")
     
     input("Press ENTER to turn OFF 3-switch...")
-    print("  → Turning OFF 3-switch (Analog 4 to 0V)")
+    print("  → Turning OFF 3-switch (Analog 4 to 0V) (TEST MODE - command not executed)")
     # COMMENTED OUT: gl7_controller.send_command("ANALOG 4,0")
     print()
     

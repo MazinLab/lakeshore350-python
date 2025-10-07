@@ -16,11 +16,11 @@ def execute_step2a_test(gl7_controller):
     # Manual heat switch control - Turn switches ON before ADR (TEST MODE - COMMANDS COMMENTED OUT)
     print("Manual Heat Switch Control:")
     input("Press ENTER to turn ON 4-switch...")
-    print("  → Turning ON 4-switch (Analog 3 to 5V)")
+    print("  → Turning ON 4-switch (Analog 3 to 5V) (TEST MODE - command not executed)")
     # COMMENTED OUT: gl7_controller.send_command("ANALOG 3,1,1,5.0,0.0,0")
     
     input("Press ENTER to turn ON 3-switch...")
-    print("  → Turning ON 3-switch (Analog 4 to 5V)")
+    print("  → Turning ON 3-switch (Analog 4 to 5V) (TEST MODE - command not executed)")
     # COMMENTED OUT: gl7_controller.send_command("ANALOG 4,1,1,5.0,0.0,0")
     print()
     

@@ -22,6 +22,7 @@ def execute_step4(gl7_controller):
         temp_3he_head = convert_3head_resistance_to_temperature(resistance_3he_head)
         print(f"  3-head Temperature (Input A): {temp_3he_head:.3f} K")
     else:
+        temp_3he_head = None
         print(f"  3-head Temperature (Input A): Unable to read sensor")
     
     # 4He Head - read resistance and convert to temperature (Input C)
@@ -30,6 +31,7 @@ def execute_step4(gl7_controller):
         temp_4he_head = convert_4head_resistance_to_temperature(resistance_4he_head)
         print(f"  4-head Temperature (Input C): {temp_4he_head:.3f} K")
     else:
+        temp_4he_head = None
         print(f"  4-head Temperature (Input C): Unable to read sensor")
     
     # Check stage temperatures
@@ -63,9 +65,9 @@ def execute_step4(gl7_controller):
     
     # Check heads for transition (for logic only)
     heads_ready_for_transition = []
-    if isinstance(pre_temp_3he, float) and pre_temp_3he <= 4.0:
+    if isinstance(temp_3he_head, float) and temp_3he_head <= 4.0:
         heads_ready_for_transition.append("3He")
-    if isinstance(pre_temp_4he, float) and pre_temp_4he <= 4.0:
+    if isinstance(temp_4he_head, float) and temp_4he_head <= 4.0:
         heads_ready_for_transition.append("4He")
     
     

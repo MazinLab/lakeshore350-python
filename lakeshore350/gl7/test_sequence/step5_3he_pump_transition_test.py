@@ -43,15 +43,13 @@ def execute_step5_test(gl7_controller):
     print(f"  4K Stage Temperature (Channel 2 (D2)): {temp_4k_stage} K")
     print(f"  50K Stage Temperature (Channel 3 (D3)): {temp_50k_stage} K")
     
-    # 3-pump temperature - read voltage and convert to temperature (Input D)
-    voltage_3pump = gl7_controller.read_voltage('D')
+    # 3-pump temperature - read temperature directly (Input D)
+    temp_3pump = gl7_controller.read_temperature('D')
     
-    # Convert 3-pump voltage to temperature using calibration
-    if isinstance(voltage_3pump, float) and voltage_3pump > 0:
-        temp_3pump = convert_pump_voltage_to_temperature(voltage_3pump)
+    # Check if we got a valid temperature reading
+    if isinstance(temp_3pump, float) and temp_3pump > 0:
         print(f"  3-pump Temperature (Input D): {temp_3pump:.3f} K")
     else:
-        temp_3pump = None
         print(f"  3-pump Temperature (Input D): Unable to read sensor")
     
     # 4-pump temperature - read temperature directly from channel 5
@@ -95,7 +93,7 @@ def execute_step5_test(gl7_controller):
     print("Turning OFF 3-pump Heater (Heater Output 2):")
     # print("  Command would be: MOUT 2,0.0  # Set Output 2 to 0% current (OFF)")
     # COMMENTED OUT: gl7_controller.send_command("MOUT 2,0.0")
-    print("  → 3-pump heater DEACTIVATED (0% power)")
+    print("  → 3-pump heater DEACTIVATED (0% power) (TEST MODE - command not executed)")
     
     time.sleep(1)
     
@@ -103,7 +101,7 @@ def execute_step5_test(gl7_controller):
     input("\nPress ENTER to confirm we reached 2K and turn ON 3-switch (Analog 4)...")
     
     # Turn on 3He heat switch
-    print(f"Turning ON {gl7_controller.analog_heat_switches[4]}:")
+    print(f"Turning ON {gl7_controller.analog_heat_switches[4]}: (TEST MODE - command not executed)")
     # print("  Command would be: ANALOG 4,1,1,5.0,0.0,0  # Turn ON 3He switch (5V)")
     # COMMENTED OUT: gl7_controller.send_command("ANALOG 4,1,1,5.0,0.0,0")
     print("  → 3-switch ACTIVATED (5V)")

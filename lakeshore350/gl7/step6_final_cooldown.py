@@ -58,13 +58,4 @@ def execute_step6(gl7_controller):
     except ValueError:
         final_4pump = None
         print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
-    
-    print(f"\nFinal Assessment:")
-    print("→ System has reached final cooldown state")
-    print("→ All temperatures logged for final analysis")
-    print("→ GL7 cooldown sequence complete")
-    
-    print("\n" + "=" * 50)
-    print("GL7 STEP 6 COMPLETE")
-    print("System ready for operation at base temperature")
-    print("=" * 50)
+

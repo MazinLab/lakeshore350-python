@@ -36,15 +36,13 @@ def execute_step6_test(gl7_controller):
     print(f"  4K Stage Temperature (Channel 2 (D2)): {final_4k_stage} K")
     print(f"  50K Stage Temperature (Channel 3 (D3)): {final_50k_stage} K")
     
-    # 3-pump temperature - read voltage and convert to temperature (Input D)
-    voltage_3pump = gl7_controller.read_voltage('D')
+    # 3-pump temperature - read temperature directly (Input D)
+    final_3pump = gl7_controller.read_temperature('D')
     
-    # Convert 3-pump voltage to temperature using calibration
-    if isinstance(voltage_3pump, float) and voltage_3pump > 0:
-        final_3pump = convert_pump_voltage_to_temperature(voltage_3pump)
+    # Check if we got a valid temperature reading
+    if isinstance(final_3pump, float) and final_3pump > 0:
         print(f"  3-pump Temperature (Input D): {final_3pump:.3f} K")
     else:
-        final_3pump = None
         print(f"  3-pump Temperature (Input D): Unable to read sensor")
     
     # 4-pump temperature - read temperature directly from channel 5
@@ -60,22 +58,5 @@ def execute_step6_test(gl7_controller):
     except ValueError:
         final_4pump = None
         print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
-    
-    # Final heater/switch status
-    print("\nFinal Heater/Switch Status:")
-    print("  4-pump Heater (Heater Output 1): Should be OFF (0% power)")
-    print("  3-pump Heater (Heater Output 2): Should be OFF (0% power)")
-    
-    for output_num, name in gl7_controller.analog_heat_switches.items():
-        config = gl7_controller.query_analog_status(output_num)
-        # Parse the config to determine ON/OFF status and voltage
-        try:
-            config_parts = config.split(',') if config else []
-            status_value = int(config_parts[0]) if len(config_parts) > 0 else 0
-            voltage = float(config_parts[2]) if len(config_parts) > 2 else 0.0
-            status_text = f"(ON, {voltage:.1f}V)" if status_value == 1 else f"(OFF, {voltage:.1f}V)"
-        except (ValueError, IndexError):
-            status_text = "(UNKNOWN)"
-        print(f"  {name}: Config={config} {status_text} (should be ON)")
     
     return True
