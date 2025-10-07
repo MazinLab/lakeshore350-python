@@ -26,7 +26,6 @@ class ThreeHeadCalibration:
         three_head_file = os.path.join(script_dir, "calibration", "3_head_cal.csv")
         if os.path.exists(three_head_file):
             self.load_calibration_file(three_head_file)
-            print(f"Loaded 3-head calibration with {len(self.resistances)} data points")
         else:
             print(f"Warning: 3-head calibration file not found at {three_head_file}")
     

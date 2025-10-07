@@ -43,15 +43,15 @@ class TemperatureReader:
         Inputs: A, B, C, D (temperature sensor inputs)
         Returns resistance in ohms for resistance sensors
         """
-        # For resistance readings, we use input letters directly
-        if isinstance(input_or_channel, str) and input_or_channel.upper() in ['A', 'B', 'C', 'D']:
-            input_letter = input_or_channel.upper()
-        else:
-            # For numbered inputs, map back to letters
-            input_map = {1: 'A', 2: 'B', 3: 'C', 4: 'D'}
-            input_letter = input_map.get(input_or_channel, str(input_or_channel))
+        # Map input letters to numbers for SRDG command
+        input_map = {'A': 1, 'B': 2, 'C': 3, 'D': 4}
         
-        response = self.send_command(f"SRDG? {input_letter}")
+        if isinstance(input_or_channel, str) and input_or_channel.upper() in input_map:
+            channel_num = input_map[input_or_channel.upper()]
+        else:
+            channel_num = input_or_channel
+        
+        response = self.send_command(f"SRDG? {channel_num}")
         
         if response is None or response == "":
             return "NO_RESPONSE"
@@ -75,15 +75,15 @@ class TemperatureReader:
         Inputs: A, B, C, D (temperature sensor inputs)
         Returns voltage in volts
         """
-        # For voltage readings, we use input letters directly
-        if isinstance(input_or_channel, str) and input_or_channel.upper() in ['A', 'B', 'C', 'D']:
-            input_letter = input_or_channel.upper()
-        else:
-            # For numbered inputs, map back to letters
-            input_map = {1: 'A', 2: 'B', 3: 'C', 4: 'D'}
-            input_letter = input_map.get(input_or_channel, str(input_or_channel))
+        # Map input letters to numbers for VRDG command
+        input_map = {'A': 1, 'B': 2, 'C': 3, 'D': 4}
         
-        response = self.send_command(f"VRDG? {input_letter}")
+        if isinstance(input_or_channel, str) and input_or_channel.upper() in input_map:
+            channel_num = input_map[input_or_channel.upper()]
+        else:
+            channel_num = input_or_channel
+        
+        response = self.send_command(f"VRDG? {channel_num}")
         
         if response is None or response == "":
             return "NO_RESPONSE"

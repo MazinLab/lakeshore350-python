@@ -44,8 +44,6 @@ class PumpCalibration:
                             # Skip rows with invalid data
                             continue
             
-            print(f"Loaded pump calibration with {len(self.temperatures)} data points")
-            
         except FileNotFoundError:
             raise FileNotFoundError(f"Pump calibration file not found: {cal_file_path}")
         except Exception as e:

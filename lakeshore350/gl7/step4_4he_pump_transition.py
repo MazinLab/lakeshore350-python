@@ -6,7 +6,6 @@ GL7 Step 4: 4He Pump Transition
 import time
 from ..head3_calibration import convert_3head_resistance_to_temperature
 from ..head4_calibration import convert_4head_resistance_to_temperature
-from ..pump_calibration import convert_pump_voltage_to_temperature
 
 def execute_step4(gl7_controller):
     """Execute GL7 Step 4: 4He Pump Transition"""
@@ -39,24 +38,21 @@ def execute_step4(gl7_controller):
     print(f"  4K Stage Temperature (Channel 2 (D2)): {pre_4k_stage} K")
     print(f"  50K Stage Temperature (Channel 3 (D3)): {pre_50k_stage} K")
     
-    # 3-pump temperature - read voltage and convert to temperature (Input D)
-    voltage_3pump = gl7_controller.read_voltage('D')
+    # 3-pump temperature - read temperature directly (Input D)
+    pre_temp_3pump = gl7_controller.read_temperature('D')
     
-    # Convert 3-pump voltage to temperature using calibration
-    if isinstance(voltage_3pump, float) and voltage_3pump > 0:
-        pre_temp_3pump = convert_pump_voltage_to_temperature(voltage_3pump)
+    # Check if we got a valid temperature reading
+    if isinstance(pre_temp_3pump, float) and pre_temp_3pump > 0:
         print(f"  3-pump Temperature (Input D): {pre_temp_3pump:.3f} K")
     else:
-        pre_temp_3pump = None
         print(f"  3-pump Temperature (Input D): Unable to read sensor")
     
-    # 4-pump temperature - read voltage from channel 5 and convert to temperature
-    voltage_4pump_response = gl7_controller.send_command("VRDG? 5")
+    # 4-pump temperature - read temperature directly from channel 5
+    temp_4pump_response = gl7_controller.send_command("KRDG? 5")
     
     try:
-        if voltage_4pump_response and voltage_4pump_response != "V_OVER":
-            voltage_4pump = float(voltage_4pump_response)
-            pre_temp_4pump = convert_pump_voltage_to_temperature(voltage_4pump)
+        if temp_4pump_response and temp_4pump_response != "T_OVER":
+            pre_temp_4pump = float(temp_4pump_response)
             print(f"  4-pump Temperature (Channel 5): {pre_temp_4pump:.3f} K")
         else:
             pre_temp_4pump = None

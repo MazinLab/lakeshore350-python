@@ -56,7 +56,7 @@ class GL7Controller:
         
         # Handle regular inputs (A, B, C, D)
         input_map = {'A': 1, 'B': 2, 'C': 3, 'D': 4}
-        if input_channel.upper() in input_map:
+        if isinstance(input_channel, str) and input_channel.upper() in input_map:
             channel_num = input_map[input_channel.upper()]
             
             # For GL7 3-head (A) and 4-head (C), read resistance instead of temperature
@@ -65,6 +65,17 @@ class GL7Controller:
             else:
                 response = self.send_command(f"KRDG? {channel_num}")
                 
+            try:
+                if response and response != "T_OVER":
+                    return float(response)
+                else:
+                    return response
+            except ValueError:
+                return response
+        
+        # Handle numeric channels/inputs directly
+        elif isinstance(input_channel, int):
+            response = self.send_command(f"KRDG? {input_channel}")
             try:
                 if response and response != "T_OVER":
                     return float(response)

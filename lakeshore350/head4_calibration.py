@@ -44,8 +44,6 @@ class FourHeadCalibration:
                             # Skip rows with invalid data
                             continue
             
-            print(f"Loaded 4-head calibration with {len(self.temperatures)} data points")
-            
         except FileNotFoundError:
             raise FileNotFoundError(f"4-head calibration file not found: {cal_file_path}")
         except Exception as e:

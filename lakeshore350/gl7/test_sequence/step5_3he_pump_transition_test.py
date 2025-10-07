@@ -6,7 +6,6 @@ GL7 Step 5: 3He Pump Transition
 import time
 from ...head3_calibration import convert_3head_resistance_to_temperature
 from ...head4_calibration import convert_4head_resistance_to_temperature
-from ...pump_calibration import convert_pump_voltage_to_temperature
 
 def execute_step5_test(gl7_controller):
     """Execute GL7 Step 5: Cooling to 2K and 3He Pump Transition"""
@@ -55,13 +54,12 @@ def execute_step5_test(gl7_controller):
         temp_3pump = None
         print(f"  3-pump Temperature (Input D): Unable to read sensor")
     
-    # 4-pump temperature - read voltage from channel 5 and convert to temperature
-    voltage_4pump_response = gl7_controller.send_command("VRDG? 5")
+    # 4-pump temperature - read temperature directly from channel 5
+    temp_4pump_response = gl7_controller.send_command("KRDG? 5")
     
     try:
-        if voltage_4pump_response and voltage_4pump_response != "V_OVER":
-            voltage_4pump = float(voltage_4pump_response)
-            temp_4pump = convert_pump_voltage_to_temperature(voltage_4pump)
+        if temp_4pump_response and temp_4pump_response != "T_OVER":
+            temp_4pump = float(temp_4pump_response)
             print(f"  4-pump Temperature (Channel 5): {temp_4pump:.3f} K")
         else:
             temp_4pump = None

@@ -6,7 +6,6 @@ GL7 Step 3: Pump Heating Phase
 import time
 from ..head3_calibration import convert_3head_resistance_to_temperature
 from ..head4_calibration import convert_4head_resistance_to_temperature
-from ..pump_calibration import convert_pump_voltage_to_temperature
 
 def execute_step3(gl7_controller):
     """Execute GL7 Step 3: Pump Heating Phase (45-55K)"""
@@ -97,32 +96,24 @@ def execute_step3(gl7_controller):
     print(f"  50K Stage Temperature (Channel 3 (D3)): {temp_50k_stage} K")
     print(f"  Device Stage Temperature (Input B): {temp_input_b} K")
     
-    # 3-pump temperature - read voltage and convert to temperature (Input D)
-    voltage_3pump = gl7_controller.read_voltage('D')
+    # 3-pump temperature - read temperature directly (Input D)
+    temp_3pump = gl7_controller.read_temperature('D')
     
-    # Convert 3-pump voltage to temperature using calibration
-    if isinstance(voltage_3pump, float) and voltage_3pump > 0:
-        temp_3pump = convert_pump_voltage_to_temperature(voltage_3pump)
-    else:
-        temp_3pump = None
-    
-    if temp_3pump is not None:
+    # Check if we got a valid temperature reading
+    if isinstance(temp_3pump, float) and temp_3pump > 0:
         print(f"  3-pump Temperature (Input D): {temp_3pump:.3f} K")
     else:
         print(f"  3-pump Temperature (Input D): Unable to read sensor")
     
-    # 4-pump temperature - read voltage from channel 5 and convert to temperature
-    voltage_4pump_response = gl7_controller.send_command("VRDG? 5")
+    # 4-pump temperature - read temperature directly from channel 5
+    temp_4pump_response = gl7_controller.send_command("KRDG? 5")
     
     try:
-        if voltage_4pump_response and voltage_4pump_response != "V_OVER":
-            voltage_4pump = float(voltage_4pump_response)
-            temp_4pump = convert_pump_voltage_to_temperature(voltage_4pump)
+        if temp_4pump_response and temp_4pump_response != "T_OVER":
+            temp_4pump = float(temp_4pump_response)
         else:
-            voltage_4pump = None
             temp_4pump = None
     except ValueError:
-        voltage_4pump = None
         temp_4pump = None
     
     if temp_4pump is not None:

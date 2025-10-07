@@ -8,13 +8,13 @@ import serial
 from .temperature import TemperatureReader
 from .gl7_control import GL7Controller
 from .gl7 import test_sequence
+from .head3_calibration import convert_3head_resistance_to_temperature
+from .head4_calibration import convert_4head_resistance_to_temperature
+from .pump_calibration import convert_pump_voltage_to_temperature
 
 def main():
     parser = argparse.ArgumentParser(description="Lakeshore 350 Temperature Controller")
     parser.add_argument("--port", default="/dev/ttyUSB2", help="Serial port (default: /dev/ttyUSB2)")
-    parser.add_argument("--input", help="Read specific input (A, B, C, D)")
-    parser.add_argument("--channel", type=int, help="Read specific channel (2-5)")
-    parser.add_argument("--channels", nargs='+', type=int, help="Read multiple channels (e.g., --channels 2 3 4 5)")
     parser.add_argument("--all-inputs", action="store_true", help="Read all sensor inputs (A, B, C, D)")
     parser.add_argument("--all", action="store_true", help="Read all inputs and channels 2-5")
     parser.add_argument("--info", action="store_true", help="Get device information")
@@ -61,7 +61,7 @@ def main():
     args = parser.parse_args()
     
     # If no specific action requested, default to reading all inputs
-    if not any([args.input, args.channel, args.channels, args.all_inputs, args.all, args.info,
+    if not any([args.all_inputs, args.all, args.info,
                 args.start_gl7, args.gl7_step1, args.gl7_step2a, args.gl7_step2b, args.gl7_step3,
                 args.gl7_step4, args.gl7_step5, args.gl7_step6, args.gl7_step7,
                 args.start_gl7_test_sequence, args.gl7_step1_test, args.gl7_step2a_test,
@@ -81,57 +81,128 @@ def main():
             info = temp_reader.get_device_info()
             print(f"  {info if info else 'No response'}")
             print()
-        
-        if args.input:
-            print(f"Input {args.input.upper()} Temperature:")
-            temp = temp_reader.read_temperature(args.input)
-            if isinstance(temp, float):
-                print(f"  {temp:.3f} K")
-            else:
-                print(f"  {temp}")
-        
-        if args.channel:
-            print(f"Channel {args.channel} Temperature:")
-            temp = temp_reader.read_temperature(args.channel)
-            if isinstance(temp, float):
-                print(f"  {temp:.3f} K")
-            else:
-                print(f"  {temp}")
-        
-        if args.channels:
-            print("Selected Channels:")
-            temps = temp_reader.read_channels(args.channels)
-            for channel_name, temp in temps.items():
-                if isinstance(temp, float):
-                    print(f"  {channel_name}: {temp:.3f} K")
-                else:
-                    print(f"  {channel_name}: {temp}")
-        
+
         if args.all_inputs:
             print("All Sensor Inputs:")
             temps = temp_reader.read_all_inputs()
             for input_name, temp in temps.items():
+                # Extract the input letter (A, B, C, D) from input_name like "Input_A"
+                input_letter = input_name.split('_')[1]
+                
                 if isinstance(temp, float):
-                    print(f"  {input_name}: {temp:.3f} K")
+                    # Convert resistance to temperature for 3-head (A) and 4-head (C)
+                    if input_letter == 'A' and temp > 0:
+                        # Input A is 3-head resistance, convert to temperature
+                        calibrated_temp = convert_3head_resistance_to_temperature(temp)
+                        print(f"  Input A (3-head): {temp:.4f} Ω → {calibrated_temp:.3f} K")
+                    elif input_letter == 'C' and temp > 0:
+                        # Input C is 4-head resistance, convert to temperature
+                        calibrated_temp = convert_4head_resistance_to_temperature(temp)
+                        print(f"  Input C (4-head): {temp:.4f} Ω → {calibrated_temp:.3f} K")
+                    elif input_letter == 'B':
+                        # Input B is 1K GGG temperature reading
+                        print(f"  Input B (1K GGG): {temp:.3f} K")
+                    elif input_letter == 'D':
+                        # Input D is 3-pump temperature reading
+                        print(f"  Input D (3-pump): {temp:.3f} K")
                 else:
-                    print(f"  {input_name}: {temp}")
+                    # Handle non-numeric readings
+                    if input_letter == 'A':
+                        print(f"  Input A (3-head): {temp}")
+                    elif input_letter == 'B':
+                        print(f"  Input B (1K GGG): {temp}")
+                    elif input_letter == 'C':
+                        print(f"  Input C (4-head): {temp}")
+                    elif input_letter == 'D':
+                        print(f"  Input D (3-pump): {temp}")
         
         if args.all:
             print("All Inputs (A-D):")
             input_temps = temp_reader.read_all_inputs()
             for input_name, temp in input_temps.items():
+                # Extract the input letter (A, B, C, D) from input_name like "Input_A"
+                input_letter = input_name.split('_')[1]
+                
                 if isinstance(temp, float):
-                    print(f"  {input_name}: {temp:.3f} K")
+                    # Convert resistance to temperature for 3-head (A) and 4-head (C)
+                    if input_letter == 'A' and temp > 0:
+                        # Input A is 3-head resistance, convert to temperature
+                        calibrated_temp = convert_3head_resistance_to_temperature(temp)
+                        print(f"  Input A (3-head): {temp:.4f} Ω → {calibrated_temp:.3f} K")
+                    elif input_letter == 'C' and temp > 0:
+                        # Input C is 4-head resistance, convert to temperature
+                        calibrated_temp = convert_4head_resistance_to_temperature(temp)
+                        print(f"  Input C (4-head): {temp:.4f} Ω → {calibrated_temp:.3f} K")
+                    elif input_letter == 'B':
+                        # Input B is 1K GGG temperature reading
+                        print(f"  Input B (1K GGG): {temp:.3f} K")
+                    elif input_letter == 'D':
+                        # Input D is 3-pump temperature reading
+                        print(f"  Input D (3-pump): {temp:.3f} K")
                 else:
-                    print(f"  {input_name}: {temp}")
+                    # Handle non-numeric readings
+                    if input_letter == 'A':
+                        print(f"  Input A (3-head): {temp}")
+                    elif input_letter == 'B':
+                        print(f"  Input B (1K GGG): {temp}")
+                    elif input_letter == 'C':
+                        print(f"  Input C (4-head): {temp}")
+                    elif input_letter == 'D':
+                        print(f"  Input D (3-pump): {temp}")
             
-            print("\nAll Channels (2-5):")
-            channel_temps = temp_reader.read_channels([2, 3, 4, 5])
-            for channel_name, temp in channel_temps.items():
-                if isinstance(temp, float):
-                    print(f"  {channel_name}: {temp:.3f} K")
+            print("\nAll Channels:")
+            # Read the actual D2, D3, D4 inputs and Channel 5
+            d2_temp = temp_reader.send_command("KRDG? D2")
+            d3_temp = temp_reader.send_command("KRDG? D3") 
+            d4_temp = temp_reader.send_command("KRDG? D4")
+            ch5_temp = temp_reader.send_command("KRDG? 5")  # Read temperature directly for 4-pump
+            
+            # Process D2 (4K Diode) - check for over-range
+            d2_status = temp_reader.send_command("RDGST? D2")
+            try:
+                if d2_status and int(d2_status) & 32:  # Check if over-range
+                    print(f"  D2 (4K Diode): T_OVER K")
                 else:
-                    print(f"  {channel_name}: {temp}")
+                    try:
+                        d2_val = float(d2_temp) if d2_temp else 0.0
+                        if d2_val == 0.0:
+                            print(f"  D2 (4K Diode): T_OVER K")
+                        else:
+                            print(f"  D2 (4K Diode): {d2_val:.3f} K")
+                    except ValueError:
+                        print(f"  D2 (4K Diode): {d2_temp}")
+            except (ValueError, TypeError):
+                print(f"  D2 (4K Diode): {d2_temp}")
+            
+            # Process D3 (60K Diode)
+            try:
+                d3_val = float(d3_temp) if d3_temp else None
+                if d3_val is not None:
+                    print(f"  D3 (60K Diode): {d3_val:.3f} K")
+                else:
+                    print(f"  D3 (60K Diode): {d3_temp}")
+            except ValueError:
+                print(f"  D3 (60K Diode): {d3_temp}")
+            
+            # Process D4 (GL7 Film Burner)
+            try:
+                d4_val = float(d4_temp) if d4_temp else None
+                if d4_val is not None:
+                    print(f"  D4 (GL7 Film Burner): {d4_val:.3f} K")
+                else:
+                    print(f"  D4 (GL7 Film Burner): {d4_temp}")
+            except ValueError:
+                print(f"  D4 (GL7 Film Burner): {d4_temp}")
+            
+            # Process Channel 5 (4-Pump) - read temperature directly
+            try:
+                if ch5_temp and ch5_temp != "T_OVER" and ch5_temp != "NO_RESPONSE":
+                    temp_val = float(ch5_temp)
+                    print(f"  Channel 5 (4-Pump): {temp_val:.3f} K")
+                else:
+                    print(f"  Channel 5 (4-Pump): {ch5_temp}")
+            except ValueError:
+                print(f"  Channel 5 (4-Pump): {ch5_temp}")
         
         # GL7 automation sequence (will be production version when commands are uncommented)
         if args.start_gl7:

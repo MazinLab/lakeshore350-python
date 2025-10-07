@@ -11,14 +11,13 @@ Temperature        self.csv_headers = [
             "3_Head_Temp_K",
             "4_Head_Res_Ohm",
             "4_Head_Temp_K",
-            "3_Pump_Volt_V",
             "3_Pump_Temp_K",
             "4_Pump_Volt_V",
             "4_Pump_Temp_K"
         ]
         
         # Define column widths for nice formatting (adjusted for proper alignment)
-        # Timestamp, Date, Time, 4K_Stage, 50K_Stage, Device_Stage, 3_Head_Res, 3_Head_Temp, 4_Head_Res, 4_Head_Temp, 3_Pump_Volt, 3_Pump_Temp, 4_Pump_Volt, 4_Pump_Temp
+        # Timestamp, Date, Time, 4K_Stage, 50K_Stage, Device_Stage, 3_Head_Res, 3_Head_Temp, 4_Head_Res, 4_Head_Temp, 3_Pump_Temp, 4_Pump_Temp
         self.column_widths = [28, 12, 12, 17, 17, 20, 18, 16, 18, 16, 17, 16, 17, 16]
 Continuously records temperatures every 30 seconds and saves to CSV
 """
@@ -35,7 +34,6 @@ sys.path.append('/home/kids/lakeshore350-python')
 from lakeshore350.temperature import TemperatureReader
 from lakeshore350.head3_calibration import convert_3head_resistance_to_temperature
 from lakeshore350.head4_calibration import convert_4head_resistance_to_temperature
-from lakeshore350.pump_calibration import convert_pump_voltage_to_temperature
 
 class TemperatureRecorder:
     def __init__(self):
@@ -71,8 +69,8 @@ class TemperatureRecorder:
         ]
         
         # Define column widths for nice formatting (adjusted for proper alignment)
-        # Timestamp, Date, Time, 4K_Stage, 50K_Stage, Device_Stage, 3_Head_Res, 3_Head_Temp, 4_Head_Res, 4_Head_Temp, 3_Pump_Volt, 3_Pump_Temp, 4_Pump_Volt, 4_Pump_Temp
-        self.column_widths = [28, 12, 12, 17, 17, 20, 18, 16, 18, 16, 17, 16, 17, 16]
+        # Timestamp, Date, Time, 4K_Stage, 50K_Stage, Device_Stage, 3_Head_Res, 3_Head_Temp, 4_Head_Res, 4_Head_Temp, 3_Pump_Temp, 4_Pump_Temp
+        self.column_widths = [28, 12, 12, 17, 17, 20, 18, 16, 18, 16, 16, 16]
         
         # Don't print header yet - will be done in run() method
         
@@ -195,26 +193,24 @@ class TemperatureRecorder:
             else:
                 temp_4_head = None
             
-            # 3-pump voltage (Input D) and calibrated temperature
-            voltage_3_pump = self.temp_reader.read_voltage('D')
-            
-            # Convert 3-pump voltage to temperature using calibration
-            if isinstance(voltage_3_pump, float) and voltage_3_pump > 0:
-                temp_3_pump = convert_pump_voltage_to_temperature(voltage_3_pump)
-            else:
+            # 3-pump temperature (Input D) - read temperature directly
+            temp_3_pump_response = self.temp_reader.send_command("KRDG? 4")
+            try:
+                if temp_3_pump_response and temp_3_pump_response != "T_OVER" and temp_3_pump_response != "NO_RESPONSE":
+                    temp_3_pump = float(temp_3_pump_response)
+                else:
+                    temp_3_pump = None
+            except ValueError:
                 temp_3_pump = None
             
-            # 4-pump voltage (Channel 5) and calibrated temperature
-            voltage_4_pump_response = self.temp_reader.send_command("VRDG? 5")
+            # 4-pump temperature (Channel 5) - read temperature directly
+            temp_4_pump_response = self.temp_reader.send_command("KRDG? 5")
             try:
-                if voltage_4_pump_response and voltage_4_pump_response != "V_OVER" and voltage_4_pump_response != "NO_RESPONSE":
-                    voltage_4_pump = float(voltage_4_pump_response)
-                    temp_4_pump = convert_pump_voltage_to_temperature(voltage_4_pump)
+                if temp_4_pump_response and temp_4_pump_response != "T_OVER" and temp_4_pump_response != "NO_RESPONSE":
+                    temp_4_pump = float(temp_4_pump_response)
                 else:
-                    voltage_4_pump = None
                     temp_4_pump = None
             except ValueError:
-                voltage_4_pump = None
                 temp_4_pump = None
             
             return {
@@ -228,9 +224,7 @@ class TemperatureRecorder:
                 "temp_3_head": temp_3_head,
                 "resistance_4_head": resistance_4_head,
                 "temp_4_head": temp_4_head,
-                "voltage_3_pump": voltage_3_pump,
                 "temp_3_pump": temp_3_pump,
-                "voltage_4_pump": voltage_4_pump,
                 "temp_4_pump": temp_4_pump
             }
             
@@ -252,9 +246,7 @@ class TemperatureRecorder:
                 data["temp_3_head"],
                 data["resistance_4_head"],
                 data["temp_4_head"],
-                data["voltage_3_pump"],
                 data["temp_3_pump"],
-                data["voltage_4_pump"],
                 data["temp_4_pump"]
             ]
             return row
