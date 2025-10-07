@@ -140,15 +140,35 @@ class TemperatureRecorder:
         
         try:
             # Read temperatures
-            # 4K Stage (Channel 2)
-            temp_4k = self.temp_reader.send_command("KRDG? 2")
+            # 4K Stage (Input D2) - check status first to detect over-range
+            temp_4k_status = self.temp_reader.send_command("RDGST? D2")
             try:
-                temp_4k_val = float(temp_4k) if temp_4k and temp_4k != "T_OVER" and temp_4k != "NO_RESPONSE" else temp_4k
+                if temp_4k_status:
+                    status_code = int(temp_4k_status)
+                    # Status code with bit 5 set (32 or higher) indicates temperature over-range
+                    if status_code & 32:  # Check if bit 5 is set
+                        temp_4k_val = "T_OVER"
+                    else:
+                        temp_4k = self.temp_reader.send_command("KRDG? D2")
+                        try:
+                            if temp_4k and temp_4k != "T_OVER" and temp_4k != "NO_RESPONSE":
+                                temp_4k_float = float(temp_4k)
+                                # Double-check: treat 0.0 readings as over-range
+                                if temp_4k_float == 0.0:
+                                    temp_4k_val = "T_OVER"
+                                else:
+                                    temp_4k_val = temp_4k_float
+                            else:
+                                temp_4k_val = temp_4k
+                        except ValueError:
+                            temp_4k_val = temp_4k
+                else:
+                    temp_4k_val = "NO_RESPONSE"
             except ValueError:
-                temp_4k_val = temp_4k
+                temp_4k_val = "STATUS_ERROR"
             
-            # 50K Stage (Channel 3)  
-            temp_50k = self.temp_reader.send_command("KRDG? 3")
+            # 50K Stage (Input D3)  
+            temp_50k = self.temp_reader.send_command("KRDG? D3")
             try:
                 temp_50k_val = float(temp_50k) if temp_50k and temp_50k != "T_OVER" and temp_50k != "NO_RESPONSE" else temp_50k
             except ValueError:
