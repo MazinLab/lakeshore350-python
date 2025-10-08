@@ -33,13 +33,13 @@ def execute_step2b(gl7_controller):
     else:
         print(f"  4-head Temperature (Input C): Unable to read sensor")
     
-    # 4K stage temperature (Input D2)
-    temp_4k_stage = gl7_controller.read_temperature('D2')
-    print(f"  4K Stage Temperature (Channel 2 (D2)): {temp_4k_stage} K")
+    # 4K stage temperature (Input D3)
+    temp_4k_stage = gl7_controller.read_temperature('D3')
+    print(f"  4K Stage Temperature (D3): {temp_4k_stage} K")
     
-    # 50K stage temperature (Input D3)
-    temp_50k_stage = gl7_controller.read_temperature('D3')
-    print(f"  50K Stage Temperature (Channel 3 (D3)): {temp_50k_stage} K")
+    # 50K stage temperature (Channel 2)
+    temp_50k_stage = gl7_controller.read_temperature(2)
+    print(f"  50K Stage Temperature (Channel 2): {temp_50k_stage} K")
     
     # 3-pump temperature - read temperature directly (Input D)
     temp_3pump = gl7_controller.read_temperature('D')
@@ -51,27 +51,25 @@ def execute_step2b(gl7_controller):
         print(f"  3-pump Temperature (Input D): Unable to read sensor")
     
     # 4-pump temperature - read temperature directly from channel 5
-    temp_4pump_response = gl7_controller.send_command("KRDG? 5")
+    temp_4pump = gl7_controller.read_temperature(5)
     
-    try:
-        if temp_4pump_response and temp_4pump_response != "T_OVER":
-            temp_4pump = float(temp_4pump_response)
-            print(f"  4-pump Temperature (Channel 5): {temp_4pump:.3f} K")
-        else:
-            print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
-    except ValueError:
-        print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
+    if isinstance(temp_4pump, float):
+        print(f"  4-pump Temperature (Channel 5): {temp_4pump:.3f} K")
+    else:
+        print(f"  4-pump Temperature (Channel 5): {temp_4pump}")
     print()
+    
+    # Import switch controller for centralized switch management
+    from ..switches import SwitchController
+    switch_ctrl = SwitchController(gl7_controller)
     
     # Manual heat switch control
     print("Manual Heat Switch Control:")
     input("Press ENTER to turn OFF 4-switch...")
-    print("  → Turning OFF 4-switch (Analog 3 to 0V)")
-    gl7_controller.send_command("ANALOG 3,0")
+    switch_ctrl.turn_off_switch(3)  # 4-switch is on analog output 3
     
     input("Press ENTER to turn OFF 3-switch...")
-    print("  → Turning OFF 3-switch (Analog 4 to 0V)")
-    gl7_controller.send_command("ANALOG 4,0")
+    switch_ctrl.turn_off_switch(4)  # 3-switch is on analog output 4
     print()
     
     # Heat Switch Status

@@ -13,107 +13,36 @@ from .gl7 import (
 )
 
 class GL7Controller:
-    def __init__(self, send_command_func):
-        """Initialize with a send_command function from the main controller"""
-        self.send_command = send_command_func
+    def __init__(self, temperature_reader):
+        """Initialize with a TemperatureReader instance"""
+        self.temp_reader = temperature_reader
+        self.send_command = temperature_reader.send_command  # For backward compatibility with heater/switch commands
         
         # GL7 Configuration mapping
         self.relay_pump_heaters = {1: "4He Pump Heater", 2: "3He Pump Heater"}
         self.analog_heat_switches = {3: "4-switch", 4: "3-switch"}
 
     def read_temperature(self, input_channel):
-        """Read temperature from specified input (A, B, C, D, D2, D3)
+        """GL7-specific temperature reading with proper delegation to TemperatureReader.
+        
         For GL7 3-head (A) and 4-head (C), returns resistance in ohms.
         For other inputs, returns temperature in Kelvin.
         Special inputs D2 and D3 are used for 4K and 50K stage temperatures.
         """
-        # Handle special D2 and D3 inputs for stage temperatures
-        if isinstance(input_channel, str) and input_channel.upper() in ['D2', 'D3']:
-            # Check reading status first to detect over-range conditions
-            status_response = self.send_command(f"RDGST? {input_channel.upper()}")
-            try:
-                if status_response:
-                    status_code = int(status_response)
-                    # Status code with bit 5 set (32 or higher) indicates temperature over-range
-                    if status_code & 32:  # Check if bit 5 is set
-                        return "T_OVER"
-            except ValueError:
-                pass
-            
-            # If status is normal, get the temperature reading
-            response = self.send_command(f"KRDG? {input_channel.upper()}")
-            try:
-                if response and response != "T_OVER":
-                    temp_value = float(response)
-                    # Double-check: treat 0.0 readings as over-range for temperature sensors
-                    if temp_value == 0.0:
-                        return "T_OVER"
-                    return temp_value
-                else:
-                    return response
-            except ValueError:
-                return response
+        # For GL7 3-head (A) and 4-head (C), read resistance instead of temperature
+        if isinstance(input_channel, str) and input_channel.upper() in ['A', 'C']:
+            return self.temp_reader.read_resistance(input_channel)
         
-        # Handle regular inputs (A, B, C, D)
-        input_map = {'A': 1, 'B': 2, 'C': 3, 'D': 4}
-        if isinstance(input_channel, str) and input_channel.upper() in input_map:
-            channel_num = input_map[input_channel.upper()]
-            
-            # For GL7 3-head (A) and 4-head (C), read resistance instead of temperature
-            if input_channel.upper() in ['A', 'C']:
-                response = self.send_command(f"SRDG? {channel_num}")
-            else:
-                response = self.send_command(f"KRDG? {channel_num}")
-                
-            try:
-                if response and response != "T_OVER":
-                    return float(response)
-                else:
-                    return response
-            except ValueError:
-                return response
-        
-        # Handle numeric channels/inputs directly
-        elif isinstance(input_channel, int):
-            response = self.send_command(f"KRDG? {input_channel}")
-            try:
-                if response and response != "T_OVER":
-                    return float(response)
-                else:
-                    return response
-            except ValueError:
-                return response
-        return None
+        # For all other inputs/channels, delegate to centralized temperature reading
+        return self.temp_reader.read_temperature(input_channel)
     
     def read_resistance(self, input_channel):
-        """Read resistance from specified input (A, B, C, D)"""
-        input_map = {'A': 1, 'B': 2, 'C': 3, 'D': 4}
-        if input_channel.upper() in input_map:
-            channel_num = input_map[input_channel.upper()]
-            response = self.send_command(f"SRDG? {channel_num}")
-            try:
-                if response and response != "T_OVER":
-                    return float(response)
-                else:
-                    return response
-            except ValueError:
-                return response
-        return None
+        """Read resistance from specified input - delegates to TemperatureReader"""
+        return self.temp_reader.read_resistance(input_channel)
 
     def read_voltage(self, input_channel):
-        """Read voltage from specified input (A, B, C, D)"""
-        input_map = {'A': 1, 'B': 2, 'C': 3, 'D': 4}
-        if input_channel.upper() in input_map:
-            channel_num = input_map[input_channel.upper()]
-            response = self.send_command(f"VRDG? {channel_num}")
-            try:
-                if response and response != "V_OVER":
-                    return float(response)
-                else:
-                    return response
-            except ValueError:
-                return response
-        return None
+        """Read voltage from specified input - delegates to TemperatureReader"""
+        return self.temp_reader.read_voltage(input_channel)
     
     def query_relay_status(self, relay_num):
         """Query relay heater status"""

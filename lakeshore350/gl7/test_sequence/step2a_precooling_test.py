@@ -13,15 +13,21 @@ def execute_step2a_test(gl7_controller):
     print("-" * 35)
     print("Before turning on the pulse tube, ensure GL7 heat switches are ON\n")
     
+    # Import switch controller for centralized switch management
+    from ...switches import SwitchController
+    switch_ctrl = SwitchController(gl7_controller)
+    
     # Manual heat switch control - Turn switches ON before ADR (TEST MODE - COMMANDS COMMENTED OUT)
     print("Manual Heat Switch Control:")
     input("Press ENTER to turn ON 4-switch...")
+    # TEST MODE: Show what would be executed through switch controller
+    print("  TEST MODE: Would execute switch_ctrl.turn_on_switch(3)")
     print("  → Turning ON 4-switch (Analog 3 to 5V) (TEST MODE - command not executed)")
-    # COMMENTED OUT: gl7_controller.send_command("ANALOG 3,1,1,5.0,0.0,0")
     
     input("Press ENTER to turn ON 3-switch...")
+    # TEST MODE: Show what would be executed through switch controller
+    print("  TEST MODE: Would execute switch_ctrl.turn_on_switch(4)")
     print("  → Turning ON 3-switch (Analog 4 to 5V) (TEST MODE - command not executed)")
-    # COMMENTED OUT: gl7_controller.send_command("ANALOG 4,1,1,5.0,0.0,0")
     print()
     
     # Single temperature check - operator will confirm readiness in Step 2b
@@ -52,15 +58,7 @@ def execute_step2a_test(gl7_controller):
     temp_3pump = gl7_controller.read_temperature('D')
     
     # 4-pump temperature - read temperature directly from channel 5
-    temp_4pump_response = gl7_controller.send_command("KRDG? 5")
-    
-    try:
-        if temp_4pump_response and temp_4pump_response != "T_OVER":
-            temp_4pump = float(temp_4pump_response)
-        else:
-            temp_4pump = None
-    except ValueError:
-        temp_4pump = None
+    temp_4pump = gl7_controller.read_temperature(5)
 
     if temp_3he_head is not None:
         print(f"  3-head Temperature (Input A): {temp_3he_head:.3f} K")
@@ -79,10 +77,10 @@ def execute_step2a_test(gl7_controller):
     else:
         print(f"  3-pump Temperature (Input D): Unable to read sensor")
     
-    if temp_4pump is not None:
+    if isinstance(temp_4pump, float):
         print(f"  4-pump Temperature (Channel 5): {temp_4pump:.3f} K")
     else:
-        print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
+        print(f"  4-pump Temperature (Channel 5): {temp_4pump}")
     
     print()
     print("→ Start pulse tube cooling and proceed to next step")

@@ -31,11 +31,11 @@ def execute_step1(gl7_controller):
     else:
         temp_4he_head = None
     
-    # 4K stage temperature (Input D2)
-    temp_4k_stage = gl7_controller.read_temperature('D2')
+    # 4K stage temperature (Input D3)
+    temp_4k_stage = gl7_controller.read_temperature('D3')
     
-    # 50K stage temperature (Input D3)
-    temp_50k_stage = gl7_controller.read_temperature('D3')
+    # 50K stage temperature (Channel 2)
+    temp_50k_stage = gl7_controller.read_temperature(2)
     
     # Device stage temperature (Input B)  
     temp_device = gl7_controller.read_temperature('B')
@@ -44,17 +44,15 @@ def execute_step1(gl7_controller):
     temp_3pump = gl7_controller.read_temperature('D')
     
     # 4-pump temperature - read temperature directly from channel 5
-    temp_4pump_response = gl7_controller.send_command("KRDG? 5")
-    
-    try:
-        if temp_4pump_response and temp_4pump_response != "T_OVER":
-            temp_4pump = float(temp_4pump_response)
-        else:
-            temp_4pump = None
-    except ValueError:
-        temp_4pump = None
-    
+    temp_4pump = gl7_controller.read_temperature(5)
 
+    try:
+        if isinstance(temp_4pump, float):
+            print(f"4-pump Temperature (Channel 5): {temp_4pump:.3f} K")
+        else:
+            print(f"4-pump Temperature (Channel 5): {temp_4pump}")
+    except (ValueError, TypeError):
+        print(f"4-pump Temperature (Channel 5): Unable to read sensor")
     if temp_3he_head is not None:
         print(f"3-head Temperature (Input A): {temp_3he_head:.3f} K")
     else:
@@ -64,8 +62,8 @@ def execute_step1(gl7_controller):
         print(f"4-head Temperature (Input C): {temp_4he_head:.3f} K")
     else:
         print(f"4-head Temperature (Input C): Unable to read sensor")
-    print(f"4K Stage Temperature (Channel 2 (D2)): {temp_4k_stage} K")
-    print(f"50K Stage Temperature (Channel 3 (D3)): {temp_50k_stage} K")
+    print(f"4K Stage Temperature (D3): {temp_4k_stage} K")
+    print(f"50K Stage Temperature (Channel 2): {temp_50k_stage} K")
     print(f"Device Stage Temperature (Input B): {temp_device} K")
     
     if isinstance(temp_3pump, float) and temp_3pump > 0:
@@ -73,10 +71,10 @@ def execute_step1(gl7_controller):
     else:
         print(f"3-pump Temperature (Input D): Unable to read sensor")
     
-    if temp_4pump is not None:
+    if isinstance(temp_4pump, float):
         print(f"4-pump Temperature (Channel 5): {temp_4pump:.3f} K")
     else:
-        print(f"4-pump Temperature (Channel 5): Unable to read sensor")
+        print(f"4-pump Temperature (Channel 5): {temp_4pump}")
     
     # Check current heater/switch status
     print("\nHeater/Switch Status:")

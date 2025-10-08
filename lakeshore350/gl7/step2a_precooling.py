@@ -13,15 +13,17 @@ def execute_step2a(gl7_controller):
     print("-" * 35)
     print("Before turning on the pulse tube, ensure GL7 heat switches are ON\n")
     
+    # Import switch controller for centralized switch management
+    from ..switches import SwitchController
+    switch_ctrl = SwitchController(gl7_controller)
+    
     # Manual heat switch control - Turn switches ON before ADR
     print("Manual Heat Switch Control:")
     input("Press ENTER to turn ON 4-switch...")
-    print("  → Turning ON 4-switch (Analog 3 to 5V)")
-    gl7_controller.send_command("ANALOG 3,1,1,5.0,0.0,0")
+    switch_ctrl.turn_on_switch(3)  # 4-switch is on analog output 3
     
     input("Press ENTER to turn ON 3-switch...")
-    print("  → Turning ON 3-switch (Analog 4 to 5V)")
-    gl7_controller.send_command("ANALOG 4,1,1,5.0,0.0,0")
+    switch_ctrl.turn_on_switch(4)  # 3-switch is on analog output 4
     print()
     
     # Single temperature check - operator will confirm readiness in Step 2b
@@ -46,25 +48,17 @@ def execute_step2a(gl7_controller):
     else:
         temp_4he_head = None
     
-    # 4K stage temperature (Input D2)
-    temp_4k_stage = gl7_controller.read_temperature('D2')
+    # 4K stage temperature (Input D3)
+    temp_4k_stage = gl7_controller.read_temperature('D3')
     
-    # 50K stage temperature (Input D3)
-    temp_50k_stage = gl7_controller.read_temperature('D3')
+    # 50K stage temperature (Channel 2)
+    temp_50k_stage = gl7_controller.read_temperature(2)
     
     # 3-pump temperature - read temperature directly (Input D)
     temp_3pump = gl7_controller.read_temperature('D')
     
     # 4-pump temperature - read temperature directly from channel 5
-    temp_4pump_response = gl7_controller.send_command("KRDG? 5")
-    
-    try:
-        if temp_4pump_response and temp_4pump_response != "T_OVER":
-            temp_4pump = float(temp_4pump_response)
-        else:
-            temp_4pump = None
-    except ValueError:
-        temp_4pump = None
+    temp_4pump = gl7_controller.read_temperature(5)
 
     if temp_3he_head is not None:
         print(f"  3-head Temperature (Input A): {temp_3he_head:.3f} K")
@@ -76,18 +70,18 @@ def execute_step2a(gl7_controller):
     else:
         print(f"  4-head Temperature (Input C): Unable to read sensor")
         
-    print(f"  4K Stage Temperature (Channel 2 (D2)): {temp_4k_stage} K")
-    print(f"  50K Stage Temperature (Channel 3 (D3)): {temp_50k_stage} K")
+    print(f"  4K Stage Temperature (D3): {temp_4k_stage} K")
+    print(f"  50K Stage Temperature (Channel 2): {temp_50k_stage} K")
     
     if temp_3pump is not None:
         print(f"  3-pump Temperature (Input D): {temp_3pump:.3f} K")
     else:
         print(f"  3-pump Temperature (Input D): Unable to read sensor")
     
-    if temp_4pump is not None:
+    if isinstance(temp_4pump, float):
         print(f"  4-pump Temperature (Channel 5): {temp_4pump:.3f} K")
     else:
-        print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
+        print(f"  4-pump Temperature (Channel 5): {temp_4pump}")
     
     print()
     print("→ Start pulse tube cooling and proceed to next step")

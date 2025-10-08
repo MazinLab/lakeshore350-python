@@ -28,9 +28,12 @@ def execute_step3(gl7_controller):
         except ValueError:
             print("Please enter a valid number")
     
+    # Import heater controller for centralized heater management
+    from ..heaters import HeaterController
+    heater_ctrl = HeaterController(gl7_controller)
+    
     print(f"  Starting 4-pump Heater (Heater Output 1):")
-    gl7_controller.send_command("OUTMODE 1,3,0,0")
-    gl7_controller.send_command(f"MOUT 1,{power_4pump}")
+    heater_ctrl.set_heater_mode_and_power(1, power_4pump)
     print(f"    → 4-pump Heater at {power_4pump}% power")
     
     # Wait for user confirmation before starting second heater
@@ -49,8 +52,7 @@ def execute_step3(gl7_controller):
             print("Please enter a valid number")
     
     print(f"  Starting 3-pump Heater (Heater Output 2)...")
-    gl7_controller.send_command("OUTMODE 2,3,0,0")
-    gl7_controller.send_command(f"MOUT 2,{power_3pump}")
+    heater_ctrl.set_heater_mode_and_power(2, power_3pump)
     print(f"    → 3-pump Heater at {power_3pump}% power")
     
     print("\nBoth pumps now heating...")
@@ -88,12 +90,12 @@ def execute_step3(gl7_controller):
         print(f"  4-head Temperature (Input C): Unable to read sensor")
     
     # Also read stage temperatures
-    temp_4k_stage = gl7_controller.read_temperature('D2')     # 4K stage (Input D2)
-    temp_50k_stage = gl7_controller.read_temperature('D3')    # 50K stage (Input D3)  
+    temp_4k_stage = gl7_controller.read_temperature('D3')     # 4K stage (Input D3)
+    temp_50k_stage = gl7_controller.read_temperature(2)     # 50K stage (Channel 2)  
     temp_input_b = gl7_controller.read_temperature('B')       # Device stage
     
-    print(f"  4K Stage Temperature (Channel 2 (D2)): {temp_4k_stage} K")
-    print(f"  50K Stage Temperature (Channel 3 (D3)): {temp_50k_stage} K")
+    print(f"  4K Stage Temperature (D3): {temp_4k_stage} K")
+    print(f"  50K Stage Temperature (Channel 2): {temp_50k_stage} K")
     print(f"  Device Stage Temperature (Input B): {temp_input_b} K")
     
     # 3-pump temperature - read temperature directly (Input D)
@@ -106,20 +108,12 @@ def execute_step3(gl7_controller):
         print(f"  3-pump Temperature (Input D): Unable to read sensor")
     
     # 4-pump temperature - read temperature directly from channel 5
-    temp_4pump_response = gl7_controller.send_command("KRDG? 5")
+    temp_4pump = gl7_controller.read_temperature(5)
     
-    try:
-        if temp_4pump_response and temp_4pump_response != "T_OVER":
-            temp_4pump = float(temp_4pump_response)
-        else:
-            temp_4pump = None
-    except ValueError:
-        temp_4pump = None
-    
-    if temp_4pump is not None:
+    if isinstance(temp_4pump, float):
         print(f"  4-pump Temperature (Channel 5): {temp_4pump:.3f} K")
     else:
-        print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
+        print(f"  4-pump Temperature (Channel 5): {temp_4pump}")
     
     # Check if heads have reached 4K (for assessment logic only)
     heads_at_4k = []

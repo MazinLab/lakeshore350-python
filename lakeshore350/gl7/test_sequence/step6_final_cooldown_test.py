@@ -46,17 +46,11 @@ def execute_step6_test(gl7_controller):
         print(f"  3-pump Temperature (Input D): Unable to read sensor")
     
     # 4-pump temperature - read temperature directly from channel 5
-    temp_4pump_response = gl7_controller.send_command("KRDG? 5")
+    final_4pump = gl7_controller.read_temperature(5)
     
-    try:
-        if temp_4pump_response and temp_4pump_response != "T_OVER":
-            final_4pump = float(temp_4pump_response)
-            print(f"  4-pump Temperature (Channel 5): {final_4pump:.3f} K")
-        else:
-            final_4pump = None
-            print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
-    except ValueError:
-        final_4pump = None
-        print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
+    if isinstance(final_4pump, float):
+        print(f"  4-pump Temperature (Channel 5): {final_4pump:.3f} K")
+    else:
+        print(f"  4-pump Temperature (Channel 5): {final_4pump}")
     
     return True

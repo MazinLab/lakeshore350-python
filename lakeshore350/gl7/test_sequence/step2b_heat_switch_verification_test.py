@@ -50,27 +50,29 @@ def execute_step2b_test(gl7_controller):
         print(f"  3-pump Temperature (Input D): Unable to read sensor")
     
     # 4-pump temperature - read temperature directly from channel 5
-    temp_4pump_response = gl7_controller.send_command("KRDG? 5")
+    temp_4pump = gl7_controller.read_temperature(5)
     
-    try:
-        if temp_4pump_response and temp_4pump_response != "T_OVER":
-            temp_4pump = float(temp_4pump_response)
-            print(f"  4-pump Temperature (Channel 5): {temp_4pump:.3f} K")
-        else:
-            print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
-    except ValueError:
-        print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
+    if isinstance(temp_4pump, float):
+        print(f"  4-pump Temperature (Channel 5): {temp_4pump:.3f} K")
+    else:
+        print(f"  4-pump Temperature (Channel 5): {temp_4pump}")
     print()
+    
+    # Import switch controller for centralized switch management
+    from ...switches import SwitchController
+    switch_ctrl = SwitchController(gl7_controller)
     
     # Manual heat switch control (TEST MODE - COMMANDS COMMENTED OUT)
     print("Manual Heat Switch Control:")
     input("Press ENTER to turn OFF 4-switch...")
+    # TEST MODE: Show what would be executed through switch controller
+    print("  TEST MODE: Would execute switch_ctrl.turn_off_switch(3)")
     print("  → Turning OFF 4-switch (Analog 3 to 0V) (TEST MODE - command not executed)")
-    # COMMENTED OUT: gl7_controller.send_command("ANALOG 3,0")
     
     input("Press ENTER to turn OFF 3-switch...")
+    # TEST MODE: Show what would be executed through switch controller
+    print("  TEST MODE: Would execute switch_ctrl.turn_off_switch(4)")
     print("  → Turning OFF 3-switch (Analog 4 to 0V) (TEST MODE - command not executed)")
-    # COMMENTED OUT: gl7_controller.send_command("ANALOG 4,0")
     print()
     
     # Heat Switch Status

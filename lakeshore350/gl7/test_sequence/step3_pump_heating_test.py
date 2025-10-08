@@ -28,9 +28,13 @@ def execute_step3_test(gl7_controller):
         except ValueError:
             print("Please enter a valid number")
     
+    # Import heater controller for centralized heater management
+    from ...heaters import HeaterController
+    heater_ctrl = HeaterController(gl7_controller)
+    
     print(f"  Starting 4-pump Heater (Heater Output 1):")
-    # COMMENTED OUT: gl7_controller.send_command("OUTMODE 1,3,0,0")
-    # COMMENTED OUT: gl7_controller.send_command(f"MOUT 1,{power_4pump}")
+    # TEST MODE: Show what would be executed through heater controller
+    print(f"  TEST MODE: Would execute heater_ctrl.set_heater_mode_and_power(1, {power_4pump})")
     print(f"    → 4-pump Heater at {power_4pump}% power (TEST MODE - command not executed)")
     
     # Wait for user confirmation before starting second heater
@@ -49,8 +53,8 @@ def execute_step3_test(gl7_controller):
             print("Please enter a valid number")
     
     print(f"  Starting 3-pump Heater (Heater Output 2):")
-    # COMMENTED OUT: gl7_controller.send_command("OUTMODE 2,3,0,0")
-    # COMMENTED OUT: gl7_controller.send_command(f"MOUT 2,{power_3pump}")
+    # TEST MODE: Show what would be executed through heater controller
+    print(f"  TEST MODE: Would execute heater_ctrl.set_heater_mode_and_power(2, {power_3pump})")
     print(f"    → 3-pump Heater at {power_3pump}% power (TEST MODE - command not executed)")
     
     print("\nBoth pumps now heating... (TEST MODE - heaters remain unchanged)")
@@ -96,18 +100,12 @@ def execute_step3_test(gl7_controller):
         print(f"  3-pump Temperature (Input D): Unable to read sensor")
     
     # 4-pump temperature - read temperature directly from channel 5
-    temp_4pump_response = gl7_controller.send_command("KRDG? 5")
+    temp_4pump = gl7_controller.read_temperature(5)
     
-    try:
-        if temp_4pump_response and temp_4pump_response != "T_OVER":
-            temp_4pump = float(temp_4pump_response)
-            print(f"  4-pump Temperature (Channel 5): {temp_4pump:.3f} K")
-        else:
-            temp_4pump = None
-            print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
-    except ValueError:
-        temp_4pump = None
-        print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
+    if isinstance(temp_4pump, float):
+        print(f"  4-pump Temperature (Channel 5): {temp_4pump:.3f} K")
+    else:
+        print(f"  4-pump Temperature (Channel 5): {temp_4pump}")
     
     # Check if heads have reached 4K using calibrated temperatures
     heads_at_4k = []

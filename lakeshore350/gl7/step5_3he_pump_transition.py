@@ -38,10 +38,10 @@ def execute_step5(gl7_controller):
         print(f"  4-head Temperature (Input C): Unable to read sensor")
     
     # Read stage temperatures
-    temp_4k_stage = gl7_controller.read_temperature('D2')   # 4K stage (Input D2)
-    temp_50k_stage = gl7_controller.read_temperature('D3')  # 50K stage (Input D3)
-    print(f"  4K Stage Temperature (Channel 2 (D2)): {temp_4k_stage} K")
-    print(f"  50K Stage Temperature (Channel 3 (D3)): {temp_50k_stage} K")
+    temp_4k_stage = gl7_controller.read_temperature('D3')   # 4K stage (Input D3)
+    temp_50k_stage = gl7_controller.read_temperature(2)  # 50K stage (Channel 2)
+    print(f"  4K Stage Temperature (D3): {temp_4k_stage} K")
+    print(f"  50K Stage Temperature (Channel 2): {temp_50k_stage} K")
     
     # 3-pump temperature - read temperature directly (Input D)
     temp_3pump = gl7_controller.read_temperature('D')
@@ -53,18 +53,12 @@ def execute_step5(gl7_controller):
         print(f"  3-pump Temperature (Input D): Unable to read sensor")
     
     # 4-pump temperature - read temperature directly from channel 5
-    temp_4pump_response = gl7_controller.send_command("KRDG? 5")
+    temp_4pump = gl7_controller.read_temperature(5)
     
-    try:
-        if temp_4pump_response and temp_4pump_response != "T_OVER":
-            temp_4pump = float(temp_4pump_response)
-            print(f"  4-pump Temperature (Channel 5): {temp_4pump:.3f} K")
-        else:
-            temp_4pump = None
-            print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
-    except ValueError:
-        temp_4pump = None
-        print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
+    if isinstance(temp_4pump, float):
+        print(f"  4-pump Temperature (Channel 5): {temp_4pump:.3f} K")
+    else:
+        print(f"  4-pump Temperature (Channel 5): {temp_4pump}")
     
     # Check if heads have reached 2K using calibrated temperatures
     targets_at_2k = []
@@ -89,18 +83,25 @@ def execute_step5(gl7_controller):
     # User confirmation before turning off 3He pump heater
     input("\nPress ENTER to turn OFF 3-pump heater (Output 2)...")
     
+    # Import heater controller for centralized heater management
+    from ..heaters import HeaterController
+    heater_ctrl = HeaterController(gl7_controller)
+    
     # Turn off 3He pump heater
     print("Turning OFF 3-pump Heater (Heater Output 2):")
-    gl7_controller.send_command("MOUT 2,0.0")
+    heater_ctrl.turn_off_heater(2)
     print("  → 3-pump heater DEACTIVATED (0% power)")
     
     time.sleep(1)
+    
+    # Import switch controller for centralized switch management (if not already imported)
+    from ..switches import SwitchController
+    switch_ctrl = SwitchController(gl7_controller)
     
     # User confirmation before turning on 3He switch (confirm 2K reached)
     input("\nPress ENTER to confirm we reached 2K and turn ON 3-switch (Analog 4)...")
     
     # Turn on 3He heat switch
     print(f"Turning ON {gl7_controller.analog_heat_switches[4]}:")
-    gl7_controller.send_command("ANALOG 4,1,1,5.0,0.0,0")
-    print("  → 3-switch ACTIVATED (5V)")
+    switch_ctrl.turn_on_switch(4)  # 3-switch is on analog output 4
     print("Final cooldown to ~300mK begins")

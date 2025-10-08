@@ -31,10 +31,10 @@ def execute_step6(gl7_controller):
     else:
         print(f"  4-head Temperature (Input C): Unable to read sensor")
     
-    final_4k_stage = gl7_controller.read_temperature('D2')   # 4K stage (Input D2)
-    final_50k_stage = gl7_controller.read_temperature('D3')  # 50K stage (Input D3)
-    print(f"  4K Stage Temperature (Channel 2 (D2)): {final_4k_stage} K")
-    print(f"  50K Stage Temperature (Channel 3 (D3)): {final_50k_stage} K")
+    final_4k_stage = gl7_controller.read_temperature('D3')   # 4K stage (Input D3)
+    final_50k_stage = gl7_controller.read_temperature(2)  # 50K stage (Channel 2)
+    print(f"  4K Stage Temperature (D3): {final_4k_stage} K")
+    print(f"  50K Stage Temperature (Channel 2): {final_50k_stage} K")
     
     # 3-pump temperature - read temperature directly (Input D)
     final_3pump = gl7_controller.read_temperature('D')
@@ -46,16 +46,10 @@ def execute_step6(gl7_controller):
         print(f"  3-pump Temperature (Input D): Unable to read sensor")
     
     # 4-pump temperature - read temperature directly from channel 5
-    temp_4pump_response = gl7_controller.send_command("KRDG? 5")
+    final_4pump = gl7_controller.read_temperature(5)
     
-    try:
-        if temp_4pump_response and temp_4pump_response != "T_OVER":
-            final_4pump = float(temp_4pump_response)
-            print(f"  4-pump Temperature (Channel 5): {final_4pump:.3f} K")
-        else:
-            final_4pump = None
-            print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
-    except ValueError:
-        final_4pump = None
-        print(f"  4-pump Temperature (Channel 5): Unable to read sensor")
+    if isinstance(final_4pump, float):
+        print(f"  4-pump Temperature (Channel 5): {final_4pump:.3f} K")
+    else:
+        print(f"  4-pump Temperature (Channel 5): {final_4pump}")
 
