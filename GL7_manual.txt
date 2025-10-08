@@ -1,0 +1,737 @@
+TWO-STAGE SUB-KELVIN 3He SORPTION COOLER
+TYPE GL7 (Helium 7)
+
+GENERIC INSTALLATION AND OPERATING INSTRUCTIONS
+Photo shows a typical CRC GL7 (Helium 7) sorption cooler
+
+CRC Ltd, Cool Works, 2 Albion Works, Savile Street, Sheffield S4 7UD, UK.
+Tel: +44114278 0711
+Director: Dr. S.T. Chase
+Secretary: Dr. L.C. Kenny
+Registered in England & Wales, No. 4643351
+
+VAT registration No. GB 763 8558 84
+
+Contents
+1. GENERAL HANDLING..................................................................................................................... 3
+2.
+
+SAFETY OF CHASE RESEARCH CRYOGENICS PRODUCTS ............................................................... 3
+2.1.
+
+Pressure Equipment Directive 2014/68/EU. ......................................................................... 3
+
+2.2.
+
+Pressure Equipment (Safety) Regulations 2016. ................................................................... 3
+
+2.3.
+
+Safe Operation....................................................................................................................... 4
+
+2.4.
+
+Risk Assessment .................................................................................................................... 4
+
+3.
+
+A BRIEF DESCRIPTION OF THE SORPTION COOLER UNIT.............................................................. 6
+
+4.
+
+INSTALLATION ............................................................................................................................... 7
+
+5.
+
+4.1.
+
+Mechanical ............................................................................................................................ 7
+
+4.2.
+
+Electrical ................................................................................................................................ 8
+
+ATTACHING YOUR EXPERIMENT TO THE SORPTION COOLER. ..................................................... 9
+5.1.
+
+6.
+
+7.
+
+Radiation shielding .............................................................................................................. 10
+
+OPERATION: quick-start.............................................................................................................. 10
+6.1.
+
+Summary of the operating steps ......................................................................................... 10
+
+6.2.
+
+Pre-cool and cycle to run..................................................................................................... 11
+
+6.3.
+
+Recycle from cold and run ................................................................................................... 11
+
+hints and tips for OPTIMISING THE PERFORMANCE OF YOUR SORPTION COOLER ................... 12
+7.1.
+
+Pre cool ................................................................................................................................ 12
+
+7.2.
+
+Running the 4He module..................................................................................................... 13
+
+7.3.
+
+Operating the heat switch on the 4He module................................................................... 13
+
+7.4.
+
+Operating the 3He module .................................................................................................. 13
+
+7.5.
+
+Parasitic loads ...................................................................................................................... 14
+
+8.
+
+STANDARD Pin-Out Assignments. .............................................................................................. 14
+
+9.
+
+Flow chart of GL7 operating procedure ..................................................................................... 15
+
+THIS GENERIC OPERATING MANUAL describes how to install and operate a CRC GL7 sorption cooler.
+It is accompanied by an Excel file that contains the validation test data and the calibration files that
+are specific to the sorption cooler unit that you have purchased.
+Both this manual and the Excel data file are important parts of the technical documentation for this
+product. You are advised to make a note below of the location of the Excel file specific to your
+sorption cooler unit. CRC can, on request, provide a copy of the Excel file for your unit – just let us
+know the serial number engraved around the mainplate.
+This revision of the manual was created in May 2023.
+
+2
+
+3
+1. GENERAL HANDLING
+
+WARNING!
+CRC SORPTION COOLERS CONTAIN HELIUM GAS AT HIGH PRESSURE.
+Do not crush, twist or bend the unit. Avoid applying mechanical stresses. Do not
+heat the unit above room temperature. Keep in a sealed cryostat, or in the
+shipping box and brace in which it came.
+Do not hold or lift the unit by the cold heads.
+Do not tamper with the copper capillary fill tubes.
+Avoid the use of acid fluxes when soldering near the sorption cooler. Chloride
+based fluxes will corrode stainless steel and could damage your sorption cooler.
+Always allow the unit to warm to room temperature before allowing air into your
+cryostat. Opening the air valve of a cold cryostat is likely to damage the unit
+After unpacking the sorption cooler according to the instructions supplied, the sorption cooler
+should be immediately transferred into the host cryostat. The shipping brace doubles as a stand for
+the sorption cooler, though when used as a stand, the screws through the aluminium plate into the
+cold heads should NOT be in place. When picking the sorption cooler up, it should be held by the
+main plate.
+2. SAFETY OF CHASE RESEARCH CRYOGENICS PRODUCTS
+2.1. Pressure Equipment Directive 2014/68/EU.
+This CRC sorption cooler unit is manufactured in accordance with Sound Engineering Practice. The
+volume and gas pressure within the sorption cooler are such that the equipment falls below the
+lower classification limit in Annex II of the Pressure Equipment Directive. Hence the requirements
+for Conformity Assessment do not apply and no Declaration of Conformity can be made, or CE
+marking applied.
+The sorption cooler is covered by Article 4 Paragraph 3 of the Pressure Equipment Directive, which
+states:
+“Pressure equipment and assemblies below or equal to the limits set out in points (a), (b) and (c)
+of paragraph 1 and in paragraph 2 respectively shall be designed and manufactured in accordance
+with the sound engineering practice of a Member State in order to ensure safe use. Pressure
+equipment and assemblies shall be accompanied by adequate instructions for use. Without
+prejudice to other applicable Union harmonisation legislation providing for its affixing, such
+equipment or assemblies shall not bear the CE marking referred to in Article 18.”
+2.2. Pressure Equipment (Safety) Regulations 2016.
+The pressurized modules making up this sorption cooler unit have internal volumes much lower
+than 1 litre, and pressure x volume much lower than 200 bar-litres, hence the sorption cooler is
+exempt from the Essential Safety Requirements set out in Schedule 2 of the PESR Regulations 2016.
+This means that the sorption cooler does not require a written scheme of examination. The sorption
+cooler complies in all respects with the requirements of Regulation 8 of PESR 2016. The owner has
+duties under the PESR regulations to ensure that a) the safe operating limits are not exceeded; b)
+
+4
+the unit is operated in accordance with these instructions; c) the unit is returned to Chase Research
+Cryogenics Ltd in the event that any maintenance is required. The sorption cooler contains no userserviceable parts.
+2.3. Safe Operation
+The safe operating temperature range of this sorption cooler is 0 to 320 K.
+2.4. Risk Assessment
+CRC sorption coolers contain Helium gas under pressure. The stored energy of the system is less
+than 50 bar litres. All system components are integrity tested during manufacture; the slightest leak
+will make the sorption cooler lose its stored gas and cease to function. A unit that has leaked
+presents no risks whatever to the user; the following risk assessment applies therefore only to
+functional units.
+Hazards and consequences
+Accidental damage to the sorption cooler unit could result in the sudden release of pressurised
+gases, causing mechanical failure of the unit and potential injury (or damage to surrounding
+instruments) from ejected debris. Possible events leading to failure are: overheating of the unit, for
+example in a fire; dropping or crushing of the unit; twisting or bending of the gas tubes. Mechanical
+damage to the unit is most likely to occur during assembly of the instrument of which the sorption
+cooler forms part.
+Risks without controls in place
+It is extremely unlikely that the above events will lead to danger. Chase Research Cryogenics Ltd has
+produced several hundred sorption cooler units of various designs, which are in use for a range of
+applications worldwide. To date there has never been a sudden failure of a sorption cooler unit –
+indicating that with normal use (including inevitable handling mishaps) the units have an excellent
+safety record. User experience to date shows that accidental mechanical damage to sorption cooler
+units is likely to result in slow leaks, not sudden failures.
+Controls in place
+The controls that are in place to eliminate (as far as reasonably practicable) the risks arising from
+mechanical damage to a sorption cooler unit are:
+• This written instruction manual, containing warnings about the potential risks arising from
+damage to the unit and alerting the user to more risky operations;
+• Instructions that the unit should not be used if it has been subjected to overheating,
+dropping, crushing, bending or twisting;
+• A warning in the unpacking instructions that this operating manual should be read prior to
+using the unit.
+• A shipping brace that can be used to store the unit safely when not in use.
+The applications for which sorption cooler units are intended make it impossible to place warning
+labels on the unit itself. However if the sorption cooler is incorporated into another instrument, that
+instrument should carry a warning label to alert the user that the sorption cooler contains no userserviceable parts and should not be disassembled.
+Risks with controls in place
+Providing users read and follow this instruction manual the risks are negligible.
+
+5
+
+2.5. Safe Transportation
+The unit must be correctly re-installed in its shipping brace before transportation either by road or
+air. Follow the unpacking instructions provided in reverse order and contact CRC for advice if
+needed. The cooler+brace should be securely packed into the cooler’s rigid shipping box, which
+contains polystyrene or similar cushioning material to firmly hold the unit and prevent any
+movement within the box. Add extra pieces of packing foam to ensure that the heavy pumps cannot
+move in transit. Place the rigid shipping box into a much larger outer carton surrounded by at least
+5-10 cm soft fill on all sides, this should ensure that if dropped the impact shock will be absorbed by
+the overpack, and not transmitted to the cooler itself.
+For transportation purposes CRC sorption coolers are classified under UN 2857, Class 6A (6=Other
+articles containing gas under pressure; A=asphyxiant gas). Special Provision 119 applies:
+Refrigerating machines include machines or other appliances which have been designed for the
+specific purpose of keeping food or other items at a low temperature in an internal compartment,
+and air conditioning units. Refrigerating machines and refrigerating machine components are not
+subject to the provisions of ADR if they contain less than 12 kg of gas in Class 2, group A or O
+according to 2.2.2.1.3, or if they contain less than 12 litres ammonia solution (UN No. 2672).
+This special provision means that the cooler does not need to be either labelled or shipped as
+hazardous or dangerous goods, whether transported by road or by air, provided that it is
+appropriately packed.
+Ensure that the outer carton is clearly labelled as fragile with ‘This Way Up’ labels and add Shock
+Indicators if you are handing the consignment to third-party couriers, as these should deter rough
+handling.
+
+6
+3. A BRIEF DESCRIPTION OF THE SORPTION COOLER UNIT
+The sorption cooler shown in the figure below is a standard model. In use, the sorption cooler is
+inverted, i.e. the heads will be at the bottom. The main plate needs to be thermally sunk to the cold
+head of a cryocooler at 4K or below, see section 4.1 for more information. The 3He head, 4He head
+and the film burner can all be used to extract heat from the user’s experiment, see section 5 for
+more information. The pumps and heat switches can reach up to 50K during operation, these need
+to be radiation shielded from the heads, for more information see section 5.1. All electrical
+connections are brought out to an MDM connector mounted onto the main plate. Pin-outs are listed
+at the end of this manual.
+
+GL7 sorption
+cooler
+
+The following short names for the various parts of the sorption cooler are used throughout this
+user manual:
+Short name used in this manual
+3-head
+4-head
+FB
+3-Pump
+4-Pump
+3-Switch
+4-Switch
+
+Refers to the sorption cooler part
+3He cold head
+4He cold head
+Film burner
+3He pump
+4He pump
+Heat Switch for the 3He pump
+Heat Switch for the 4He pump
+
+7
+4. INSTALLATION
+4.1. Mechanical
+
+Before installing the unit in your cryostat, be sure to remove all pieces of foam
+packing material from around the pumps, as mentioned in the unpacking
+instructions.
+There should be no need to touch the heat switches or heat straps during
+installation or normal operation of the sorption cooler. The heat switches can be
+easily damaged, and if bent or twisted are likely to fail.
+This sorption cooler is designed to work equally well in either ‘wet’ cryostat using liquid 4He to cool
+the mainplate, or in a ‘dry’ cryostat with the mainplate thermally sunk to a mechanical cryocooler
+at 4K, such as a GM or pulse tube sorption cooler. The 4K stage of the cryocooler should be made
+from gold plated copper to ensure excellent thermal contact between the sorption cooler and the
+cryocooler. To attach the sorption cooler to the 4K stage of the cryocooler there are twelve 4.1mm
+diameter (M5 clearance) holes symmetrically distributed upon a 115 mm pitch circle around the
+periphery of the circular main plate. In addition to these, there is also a row of 5 x M4 clearance
+holes at ½” (12.7mm) centres, close to one edge of the main plate. (Note: UNC #6 holes are
+substituted if requested by the customer). A .step CAD file of your sorption cooler can be provided
+on request.
+
+Because the cooling down of the heads depends upon gas convection, and on
+liquid helium collecting in the heads fed by gravity, the sorption cooler must be
+kept close to vertical with the heads downwards.
+Ensure spring washers are
+under every bolt head, these
+will take out differential
+thermal contraction that
+might otherwise cause
+loosening of the bolts, and
+thus compromise thermal
+contact.
+
+8
+
+4.2. Electrical
+All electrical connections are on a 25-pin MDM-SSP connector mounted onto the main plate. Pinouts are listed at the end of this instruction manual. The table below summarises the temperature
+sensors installed on the unit.
+ITEM
+
+Calibration
+
+Options
+
+3-head RuO2
+
+Generic Lakeshore Cryotronics
+or Scientific Instruments.
+
+Individually calibrated sensors
+available on request
+
+4-head RuO2
+
+Generic Lakeshore Cryotronics
+or Scientific Instruments.
+
+Individually calibrated sensors
+available on request
+
+Film burner diode
+
+Specific calibration supplied in
+individual data file
+
+No diode supplied
+
+Pump diodes
+
+Generic – supplied by CRC Ltd
+
+Switch diodes
+
+Generic – supplied by CRC Ltd
+
+Voltage / current requirements for driving the heaters and thermometers are summarised in the
+table below.
+ITEM
+
+NUMBER
+
+IMPEDANCE/ JUNCTION
+VOLTAGE
+
+VOLTAGE/
+CURRENT
+
+3-pump heater
+
+1
+
+300 approx.
+
+20 to 25V
+
+4-pump heater
+
+1
+
+300 approx.
+
+20 to 25V
+
+Heat switch heaters
+
+2
+
+10k
+
+4 to 5V
+
+Diode thermometers
+
+5
+
+0.5 to 1.8V
+
+10µA DC
+
+4-head RuO2 thermometer
+
+1
+
+1k to 3k
+
+1µA max.
+
+3-head RuO2 thermometer
+
+1
+
+1k to 7k
+
+100nA max.
+
+Generic (i.e. standard calibration) RuO2 sensors from Lakeshore Cryotronics or Scientific Instruments
+Inc are the default option on the heads of all CRC sorption coolers. Individually calibrated ‘CERNOX’
+or RuO2 sensors are only fitted (at additional cost) at the customer’s express requirement. The
+thermometer on the 3-head is operated as a 4-wire device and should be excited with an AC current
+no greater than 100nA, corresponding to a voltage of around 2mV at base temperature. The
+thermometer on the 4-head is operated as a 2-wire device and should ideally be driven by an AC
+
+9
+current no greater than 1µA. A reasonable temperature estimate can be gained by driving this
+sensor with 10µA DC, though this is likely to cause some self-heating and can also be vulnerable to
+thermo-electric DC offsets, particularly at higher temperatures.
+Calibration data for all thermometer sensors are in the Excel data file that accompanies each unit.
+Generic diode calibration curves for the pump diodes and heat switch diodes, and a calibration
+curve specific to the film burner diode, are supplied as standard. The diode thermometers require
+excitation with currents of 10A DC.
+The heat switch heater typically requires about 4 to 5 V to keep the switch in the ‘ON’ state with
+the absorber pod at greater than ~20K, and it will cool to the off state (T < 10 K) in ten to fifteen
+minutes.
+The pump heater impedances are typically 300. During the cooling cycle it is necessary to warm
+the 4-pump to around 50 to 60K and the 3-pump to 45 to 50K. A heater current of up to around 100
+to 130mA for the 4-pump, and around 50 to 60mA for the 3-pump, will heat the pumps rapidly;
+lower heater currents will result in slower heating. Stabilisation of the pump temperatures at around
+50K will typically require heater currents of around 12 to 15mA. Try to ensure that the lead-in wiring
+to these heaters is not unduly dissipative.
+5. ATTACHING YOUR EXPERIMENT TO THE SORPTION COOLER.
+This model of sorption cooler provides three points at which heat may be extracted from a user’s
+experiment mounted on a separate cold table. They are the 3-head, the 4-head and the film burner.
+To achieve optimum performance, only a very small load should be applied directly to the 3-head.
+The main source of cooling power is the 4-head, which can sustain a thermal load of at least 250µW
+at a temperature of less than 1K. The film burner may also be used to sink some load at around 2K.
+The 3-head has 9 tapped M3 holes on a 40mm pitch circle. The 4-head has 8 holes tapped M3 on a
+40mm pitch circle and a further axial hole tapped M4. The film burner has 6 M3 tapped holes on the
+main body, in pairs on each of the three free sides 20mm apart. (Note: UNC #4 threads will be
+substituted if requested by the customer). A step file can be provided on request.
+
+While fixing experimental equipment to the cold heads, extreme care should be
+taken not to twist or bend the gas pipes. Always support the cold heads against
+the applied torque.
+The size of a GL7-type sorption cooler determines its run time and temperature at a given heat
+loading. The sorption cooler you have purchased will have been built to your specified customer
+requirements and tested to verify that it meets its specification. Details of the specification and the
+test results are given in the Excel file accompanying your unit. Typically, the run time is limited by
+the 4-head, which will have been built to support the anticipated load requirements in the user
+specification. Under no load the 3-head will typically run at about 260mK, the 4-head at about
+865mK, and the film burner at about 1 to 1.6K. When loads are applied, the heads and film burner
+naturally run warmer, see Figure 1. Load data for your specific sorption cooler are included in its
+accompanying Excel test data file.
+
+10
+5.1. Radiation shielding
+The cold heads, and any cold table/experimental equipment/detector assembly you attach, must
+be properly radiation shielded at around 4K in order to achieve sub-Kelvin operation. Any ancillary
+support structure (cold table) and experimental wiring looms must be thermally sunk to the 4head to improve the operating temperature. Temperatures below around 300mK are only
+achievable if the total thermal load on the 3-head is kept as low as possible. The 4-head and film
+burner are designed to buffer the parasitic loads due to wiring and mechanical support structures.
+No other attachments to the sorption cooler unit are necessary for achieve satisfactory operation.
+If your sorption cooler performance is not meeting the specification you expect, this is likely to be
+due to a radiation load on the sorption cooler. Check your radiation shielding and consider adding
+extra multi-layer insulation around your radiation shields, or around the pump.
+
+6. OPERATION: QUICK-START
+6.1. Summary of the operating steps
+The basic operational sequence is as follow.
+• Pre-cool from room temperature to ~4K
+• During pre-cooling, when both heat switches turn OFF (they are at less than 10K), heat
+both pumps to around 45-55K and keep them at that temperature until the heads cool to
+~4K and their temperature stabilises.
+• Turn OFF the 4-pump heat and turn ON the 4-switch.
+• When the heads have cooled to less than 2K, turn OFF the 3-pump heater and turn ON the
+3-switch.
+A detailed flow diagram showing all the steps for running the sorption cooler is included at the end
+of this manual. The temperatures suggested are only approximate and may need to be adjusted to
+achieve the best performance for your specific sorption cooler and experiment. If you are using a
+mechanical cryocooler with a low cooling power, try the lower end of the suggested temperature
+
+11
+range. If you are using a more powerful mechanical cryocooler, or precooling with liquid helium,
+you will get the best performance at the top end of the suggested temperature range. The
+operational sequence for a typical GL7 sorption cooler is illustrated below.
+6.2. Pre-cool and cycle to run
+An illustration of a typical pre-cool and first cycle with a low-power GM cryocooler is shown below.
+Cooling times will be shorter with a higher-power GM.
+
+Here you can see that after ~1160 minutes the 4-head temperature is less than 4K, the heat switches
+are off (<10K). To get the GL7 running the pumps are both warmed to more than 45K by applying a
+voltage of 20V. The pump heaters are turned down or off while the 4-head temperatures drop to
+~2K. The 4-heat switch is turned on with a voltage of 5V and the head temperatures fall rapidly
+below 1K. Turning on the 3-switch then starts the final cooldown of the 3-module to ~300mK.
+Note in this figure that the film burner diode readings bottom out during the run because the generic
+diode calibration has been used. Diode readings at these temperatures are only indicative. In some
+cases we are able to provide a specific calibration for the film burner diode fitted to your sorption
+cooler, which will improve the accuracy of the FB diode readings below 4K.
+6.3. Recycle from cold and run
+The run time of a GL7 sorption cooler will depend on the size of the unit (i.e. how much gas it
+contains), on parasitic loads, and on loads applied by your cryostat and experiment. When the unit
+expires, it can be recycled from cold and run again. A typical sequence with a low-power GM
+cryocooler is illustrated below.
+
+12
+At the beginning of this sequence the 4-head has expired and the heat switch has been turned off.
+As before the pumps are warmed to nearly ~45K and the 3-pump is kept warm while the 4-head recools and stabilises. The 4-switch is turned on to cool the 3-head. The 3-switch is then turned on
+and the GL7 once again begins to run. The entire recycling sequence takes around 100 minutes. A
+faster recycle (warming the pump rapidly with a higher voltage) can be carried out if a higher-power
+GM is used, as it has more capacity to quickly remove the heat input to cycle the pump.
+
+7. HINTS AND TIPS FOR OPTIMISING THE PERFORMANCE OF YOUR SORPTION COOLER
+7.1. Pre cool
+Keep the pumps above 25K once the switches have turned OFF for the initial cooldown.
+It is important to understand that for the initial cool down, the cold heads cool by gas convection,
+and the pumps cool by conduction via the heat switch while the heat switch is ON. The cold heads
+will cool rapidly while the pumps are warmer than ~25K, but once the pumps drop below this
+temperature the heads could take up to a few days to reach the final cooldown temperature. This
+is because when the gas is adsorbed into the pumps, the heads cannot cool by gas convection. The
+key to a rapid cooldown is: once the heat switches have turned OFF, reheat the pumps above ~25K
+and stabilise them at this temperature. You should then see the cold heads cool rapidly to around
+4K.
+To reduce the load on your cryocooler (or usage of liquid cryogens in a wet dewar), time the heating
+of both pumps so that they reach their target temperatures at the same time. This will also give you
+a faster cooldown.
+
+13
+7.2. Running the 4He module
+Experiment with varying the pump temperature during the run to find the best performance for
+your set up.
+Once the 4-head is ~4K, and the switches are off, the sorption cooler is ready to start running. The
+generic method is to heat the pumps to the suggested temperature in the table in section 6.1 and
+maintain them there whilst ensuring the 4-head cools to below the critical liquefaction point of
+4He (5.2K). However the colder the 4-head gets while the pumps are hot, the higher the
+liquefaction efficiency, and hence the longer the sorption cooler will run before it must be
+recycled. You should try variations of pump temperatures to find a procedure that provides the
+best performance for your set up. When operating from a low-powered mechanical cryocooler
+(e.g. 100mW @ 4K PT unit) you will probably achieve more efficient 4He condensation by starting
+at the lower end of the suggested range of temperatures. This is because imposing smaller load on
+the mechanical cryocooler from the hot pumps will enable a faster and more efficient recycle and
+run.
+7.3. Operating the heat switch on the 4He module
+Turning the switch on slowly will put less load into the cryocooler.
+Once the 4He is liquified (when the 4-head and film burner temperatures have stopped falling) the
+4-pump is allowed to cool by turning OFF the pump heater and turning ON the heat switch. The
+hot 4-pump will impose a large heat load onto the 4K plate, this can cause the temperature to rise
+temporarily. However, the rate of cooling the pump can be varied depending on the voltage
+applied to the switch. The switch will begin to turn ON at 14-17K and be fully on above ~20K. If the
+switch is turned on slowly, by applying a lower voltage at first and gradually increasing it, the heat
+from the pump is dissipated more slowly and so there is less temperature rise at the 4K plate. In
+addition, if there is a small pause between turning off the pump power and turning on the switch
+power, in this time the pump will cool slightly by the parasitic load down the pump tube. At this
+point the 4-head temperature and film burner temperature will fall rapidly.
+It is particularly important to control the rate of cooldown in a GL7 because if the main plate
+temperature rises too high there is a danger that the 3-switch will turn ON. It is important to keep
+the 3-pump warm (and the 3-switch OFF) until the 4-head temperature has dropped below 2K.
+The lower you can get the 4-head temperature before cooling the 3-pump, the better.
+7.4. Operating the 3He module
+Wait to turn on the 3-switch till you see certain signals.
+Once the 4 switch is ON you can turn OFF the 3-pump power, but only turn on the 3-switch when
+the 4-head is below 2K to maximise liquefaction efficiency of the 3He. If running from a low
+powered mechanical cryocooler it is better to wait longer to turn on the 3-switch. The film burner
+closely follows the cool down of the 4-head until 0.9K, where it will stay for a short while before
+rising in temperature again. You should wait for this signal to turn on the 3-switch.
+While the 3-pump is cooling the 3-head will also cool rapidly. Final stabilisation at the operating
+temperature will take some time; how long will depend on the thermal loads applied by your
+experiment. The 3-head can take some while to stabilise, particularly with applied loads of less
+than 1µW or so. This is because the liquid 3He has a high specific heat capacity compared to the
+rate at which gas evaporation (at very low vapour pressure) can extract latent heat. The lower the
+final operating temperature, the lower will be the corresponding saturated vapour pressure, and
+the rate at which gas evaporates.
+
+14
+7.5. Parasitic loads
+Use the 4-Head and Film burner to buffer any parasitic loads.
+In operation, the parasitic loading may be distributed between the 4-head and the film burner in
+order to optimise the 3-head temperature or the run time. The longest run times will be obtained
+when the loads on the 4-head and 3-head are kept below about 150µW and 20µW respectively.
+8. STANDARD PIN-OUT ASSIGNMENTS.
+GL7 pinouts to 25-pin micro-D SSP
+
+Function
+
+Red box for
+twisted pair.
+
+TYPE
+
+female 25
+pin
+PIN #
+
+Drive current
+or voltage
+
+3He HEAD THERMOMETER V+
+
+1
+
+AC bridge or
+
+3He HEAD THERMOMETER V-
+
+14
+
+low-current driver
+
+3He HEAD THERMOMETER I+
+
+2
+
+100nA typical
+
+3He HEAD THERMOMETER I-
+
+15
+
+n/c
+4He HEAD THERMOMETER
+V+
+
+3
+4
+
+AC bridge or
+
+4He HEAD THERMOMETER V-
+
+16
+
+low-current driver
+
+DIODE FILM BURNER I+
+
+5
+
+10 A Constant current,
+
+DIODEFILM BURNER I-
+
+17
+
+Read Junction Voltage.
+
+DIODE 4He PUMP I+
+
+6
+
+10 A Constant current,
+
+DIODE 4He PUMP I-
+
+18
+
+Read Junction Voltage.
+
+DIODE 3He PUMP I+
+
+7
+
+10 A Constant current,
+
+DIODE 3He PUMP I-
+
+19
+
+Read Junction Voltage.
+
+DIODE 4He PUMP SWITCH I+
+
+8
+
+10 A Constant current,
+
+DIODE 4He PUMP SWITCH I-
+
+20
+
+Read Junction Voltage.
+
+DIODE 3He PUMP SWITCH I+
+
+9
+
+10 A Constant current,
+
+DIODE 3He PUMP SWITCH I-
+
+21
+
+Read Junction Voltage.
+
+HEATER 4He PUMP SWITCH I+
+
+10
+
+10kΩ heater element
+
+HEATER 4He PUMP SWITCH I-
+
+22
+
+4-5V supply (approx)
+
+HEATER 3He PUMP SWITCH I+
+
+11
+
+10kΩ heater element
+
+HEATER 3He PUMP SWITCH I-
+
+23
+
+4-5V supply (approx)
+
+HEATER 4He PUMP I+
+
+12
+
+300Ω heater element
+
+HEATER 4He PUMP I-
+
+24
+
+0-30V supply (approx)
+
+HEATER 3He PUMP I+
+
+13
+
+300Ω heater element
+
+HEATER 3He PUMP I-
+
+25
+
+0-30V supply (approx)
+
+Resistance thermometer
+Diode thermometer
+Low power heater (a few mW)
+High power heater (up to
+about 2W)
+
+15
+9. FLOW CHART OF GL7 OPERATING PROCEDURE
+Note that some operations occur in parallel.
+
+
