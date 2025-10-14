@@ -2,8 +2,6 @@
 
 Python interface for reading temperatures from the Lakeshore 350 Temperature Controller.
 
-** Repo still in progress, no heater capability yet 
-
 ## Installation
 
 Clone this repository and install:
@@ -16,33 +14,39 @@ pip install -e .
 ```
 
 ## Usage
+This repo is intended to be functional through simple command line arguments without running any scripts individually. 
+To see a comprehensive list of command line functionality, execute ```lakeshore350 --help```
 
-### Command Line
-
-Read all channels and inputs:
+### Basic Checks
+Read all inputs (A-C, D1-D5)
 ```bash
 lakeshore350 --all
-```
-
-Read a specific channel:
-```bash
-lakeshore350 --channel A
-```
-
-
-Read a specific input:
-```bash
-lakeshore350 --input 2
 ```
 
 Get device information:
 ```bash
 lakeshore350 --info
 ```
-
-Get list of available commands:
+### Setting and Querying Heaters/Switches
+To query the heater status,
 ```bash
-lakeshore350 --help
+lakeshore350 --outputs-query-all
+```
+Returns a list of queries for all outputs
+
+To set output parameters (i.e. max current, mode),
+```bash
+lakeshore350 --outputs-set-params
+```
+
+To set heater range,
+```bash
+lakeshore350 --outputs-set-range
+```
+
+To set output percentage,
+```bash
+lakeshore350 --outputs-set OUTPUT PERCENT
 ```
 ## Requirements
 
