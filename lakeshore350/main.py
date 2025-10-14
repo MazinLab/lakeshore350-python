@@ -22,7 +22,8 @@ def main():
     parser.add_argument("--outputs-query", type=int, metavar='OUTPUT', help="Query output status: --outputs-query <output_num>")
     parser.add_argument("--outputs-query-all", action="store_true", help="Query all outputs 1-4: --outputs-query-all")
     parser.add_argument("--outputs-set", nargs=2, metavar=('OUTPUT', 'PERCENT'), help="Set output: --outputs-set <output_num> <percent>")
-    parser.add_argument("--outputs-set-params", nargs="?", const=True, metavar='PARAMS', help="Set output parameters: --outputs-set-params [<output_num,param1,param2,...>]")
+    parser.add_argument("--outputs-set-params", nargs="?", const=True, metavar='PARAMS', help="Set output parameters: --outputs-set-params [<output_num,param1,param2,...>")
+    parser.add_argument("--outputs-set-range", nargs=2, metavar=('OUTPUT', 'RANGE'), help="Set heater range: --outputs-set-range <output_num> <range_val>")
 
 
     # Display control arguments
@@ -73,10 +74,10 @@ def main():
             else:
                 print(f"  Input B (Empty): {temp_b}") # Print w/out formatting for non number
 
-            # 4 head resistance to temperature conversion (add 34.56 to raw value)
+            # 4 head resistance to temperature conversion
             # Print raw, calibrated, and temp from calibrated
             if isinstance(temp_c, float):
-                temp_c_calibrated = temp_c + 34.56
+                temp_c_calibrated = temp_c + 34.56 #fudge factor for calibration
                 temp_c_temp = convert_4head_resistance_to_temperature(temp_c_calibrated)
                 print(f"  Input C (4-head): {temp_c:.4f} Ω (raw), {temp_c_calibrated:.4f} Ω (calibrated) → ", end="")
                 if temp_c_temp is not None:
@@ -134,7 +135,11 @@ def main():
         # Outputs (heaters and switches
         # Connects to outputs.py 
         # Output 1: 4-pump heater, Output2: 3-pump heater, Output 3: 4 switch, Output 4: 3 switch
-        if args.outputs_query is not None or args.outputs_query_all or args.outputs_set is not None or args.outputs_set_params is not None:
+        if (
+            args.outputs_query is not None or args.outputs_query_all or
+            args.outputs_set is not None or args.outputs_set_params is not None or
+            args.outputs_set_range is not None
+        ):
             output_ctrl = OutputController(port=port)
             if args.outputs_query is not None:
                 output_ctrl.query_outputs(args.outputs_query)
@@ -162,6 +167,14 @@ def main():
                         print("Error: Invalid arguments for --outputs-set-params. Use: --outputs-set-params <output_num,param1,param2,...>")
                         return
                     output_ctrl.set_output_params(output_num, params)
+            if args.outputs_set_range is not None:
+                try:
+                    output_num = int(args.outputs_set_range[0])
+                    range_val = int(args.outputs_set_range[1])
+                except (ValueError, IndexError):
+                    print("Error: Invalid arguments for --outputs-set-range. Use: --outputs-set-range <output_num> <range_val>")
+                    return
+                output_ctrl.set_heater_range(output_num, range_val)
         
         
         # Shows current lakeshore front panel 

@@ -5,6 +5,33 @@ import time
 
 
 class OutputController:
+
+    def set_heater_range(self, output_num=None, range_val=None):
+        """
+        Set the heater range for the specified output (1, 2, 3, or 4) to the given range value.
+        Usage: set_heater_range(1, 2) sets output 1 to range 2.
+        If arguments are not provided, prompt the user for them.
+        """
+        if output_num is None:
+            try:
+                output_num = int(input("Enter output number (1, 2, 3, or 4): ").strip())
+            except Exception:
+                print("Invalid output number.")
+                return
+        if output_num not in [1, 2, 3, 4]:
+            print("Output number must be 1, 2, 3, or 4.")
+            return
+        if range_val is None:
+            try:
+                range_val = int(input("Enter range value (integer): ").strip())
+            except Exception:
+                print("Invalid range value.")
+                return
+        # Send RANGE command
+        cmd = f'RANGE {output_num},{range_val}\n'.encode('ascii')
+        self.ser.write(cmd)
+        time.sleep(0.2)
+        print(f"Sent: RANGE {output_num},{range_val}")
     def __init__(self, ser=None, port='/dev/ttyUSB2'):
         if ser is not None:
             self.ser = ser
@@ -89,6 +116,17 @@ class OutputController:
         time.sleep(0.2)
         outmode_response = self.ser.readline().decode('ascii', errors='ignore').strip()
         print(f"OUTMODE? {output_num} Status: {outmode_response}")
+
+        # Query RANGE? for all outputs 1-4 (robust, with error handling)
+        try:
+            range_cmd = f'RANGE? {output_num}\n'.encode('ascii')
+            self.ser.write(range_cmd)
+            time.sleep(0.2)
+            range_response = self.ser.readline().decode('ascii', errors='ignore').strip()
+            print(f"RANGE? {output_num} Status: {range_response}")
+        except Exception as e:
+            print(f"Error querying RANGE? for output {output_num}: {e}")
+
         return response
 
     def set_outputs(self, output_num, percent):

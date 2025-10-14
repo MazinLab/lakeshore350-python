@@ -11,7 +11,9 @@ from scipy.interpolate import interp1d
 class FourHeadCalibration:
     def __init__(self, cal_path=None):
         if cal_path is None:
-            cal_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'gl7_calibrations', '4_head_cal.csv')
+            cal_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                'gl7_calibrations', '4_head_cal.csv')
         self.resistances = []
         self.temperatures = []
         with open(cal_path, 'r') as f:
@@ -25,9 +27,18 @@ class FourHeadCalibration:
                     self.resistances.append(r)
                 except Exception:
                     continue
+        # Convert to numpy arrays and sort by resistance (increasing order)
         self.temperatures = np.array(self.temperatures)
         self.resistances = np.array(self.resistances)
-        self.interpolator = interp1d(self.resistances, self.temperatures, kind='linear', bounds_error=False, fill_value=(self.temperatures[0], self.temperatures[-1]))
+        sort_idx = np.argsort(self.resistances)
+        self.resistances = self.resistances[sort_idx]
+        self.temperatures = self.temperatures[sort_idx]
+        # Now create the interpolator
+        self.interpolator = interp1d(
+            self.resistances, self.temperatures,
+            kind='linear', bounds_error=False,
+            fill_value=(self.temperatures[0], self.temperatures[-1])
+        )
 
     def resistance_to_temperature(self, resistance):
         if not isinstance(resistance, (int, float)) or resistance <= 0:
