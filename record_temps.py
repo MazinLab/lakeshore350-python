@@ -34,43 +34,38 @@ sys.path.append('/home/kids/lakeshore350-python')
 from lakeshore350.temperature import TemperatureReader
 from lakeshore350.head3_calibration import convert_3head_resistance_to_temperature
 from lakeshore350.head4_calibration import convert_4head_resistance_to_temperature
+from lakeshore350.pumps_calibration import voltage_to_temperature
 
 class TemperatureRecorder:
     def __init__(self):
         # Initialize temperature reader
         self.temp_reader = TemperatureReader()
-        
         # Data storage
         self.temperature_data = []
-        
         # CSV file setup with automatic numbering
         self.start_date = datetime.now().strftime("%Y-%m-%d")
-        
         # Create temps directory if it doesn't exist
         os.makedirs("temps", exist_ok=True)
-        
         # Find next available filename
         self.csv_filename = self._get_next_csv_filename()
-        
         # CSV headers
         self.headers = [
             "Timestamp",
-            "Date", 
+            "Date",
             "Time",
             "4K_Stage_Temp_K",
-            "50K_Stage_Temp_K", 
-            "Device_Stage_Temp_K",
+            "50K_Stage_Temp_K",
             "3_Head_Res_Ohm",
             "3_Head_Temp_K",
-            "4_Head_Res_Ohm",
+            "4_Head_Res_Raw_Ohm",
+            "4_Head_Res_Sub_Ohm",
             "4_Head_Temp_K",
+            "3_Pump_Volt",
             "3_Pump_Temp_K",
+            "4_Pump_Volt",
             "4_Pump_Temp_K"
         ]
-        
-        # Define column widths for nice formatting (adjusted for proper alignment)
-        # Timestamp, Date, Time, 4K_Stage, 50K_Stage, Device_Stage, 3_Head_Res, 3_Head_Temp, 4_Head_Res, 4_Head_Temp, 3_Pump_Temp, 4_Pump_Temp
-        self.column_widths = [28, 12, 12, 17, 17, 20, 18, 16, 18, 16, 16, 16]
+        self.column_widths = [28, 12, 12, 17, 17, 20, 18, 16, 18, 16, 17, 16, 17, 16]
         
         # Don't print header yet - will be done in run() method
         
@@ -116,10 +111,13 @@ class TemperatureRecorder:
                 # 3-head temperature (3 decimal places)
                 formatted_value = f"{value:.3f}"
             elif i == 8 and isinstance(value, float):
-                # 4-head resistance (4 decimal places)
+                # 4-head raw resistance (4 decimal places)
                 formatted_value = f"{value:.4f}"
             elif i == 9 and isinstance(value, float):
-                # 4-head temperature (3 decimal places)
+                # 4-head subtracted resistance (4 decimal places)
+                formatted_value = f"{value:.4f}"
+            elif i == 10 and isinstance(value, float):
+                # 4-head temperature from subtracted resistance (3 decimal places)
                 formatted_value = f"{value:.3f}"
             elif isinstance(value, float):
                 # Other numbers (2 decimal places)
@@ -130,70 +128,65 @@ class TemperatureRecorder:
         print(formatted_line)
         
     def get_temperatures(self):
-        """Get all required temperatures and heater status"""
+        """Get all required temperatures and voltages"""
         current_time = datetime.now()
         timestamp = current_time.isoformat()
         date_str = current_time.strftime("%Y-%m-%d")
         time_str = current_time.strftime("%H:%M:%S")
-        
         try:
-            # Read temperatures
-            # 4K Stage (Input D3) - using centralized temperature reading
+            # 4K Stage (Input D3)
             temp_4k_val = self.temp_reader.read_temperature('D3')
-            
-            # 50K Stage (Channel 2) - using centralized temperature reading
-            temp_50k_val = self.temp_reader.read_temperature(2)
-            
-            # Device Stage (Input B)
-            temp_device = self.temp_reader.read_temperature('B')
-            
+            # 50K Stage (Input D2)
+            temp_50k_val = self.temp_reader.read_temperature('D2')
             # 3-head resistance (Input A) and calibrated temperature
             resistance_3_head = self.temp_reader.read_temperature('A')
-            
-            # Convert 3-head resistance to temperature using calibration
             if isinstance(resistance_3_head, float) and resistance_3_head > 0:
                 temp_3_head = convert_3head_resistance_to_temperature(resistance_3_head)
             else:
                 temp_3_head = None
-            
-            # 4-head resistance (Input C) and calibrated temperature
-            resistance_4_head = self.temp_reader.read_temperature('C')
-            
-            # Convert 4-head resistance to temperature using calibration
-            if isinstance(resistance_4_head, float) and resistance_4_head > 0:
-                temp_4_head = convert_4head_resistance_to_temperature(resistance_4_head)
+            # 4-head resistance (Input C): raw, adjusted, and temp from adjusted
+            resistance_4_head_raw = self.temp_reader.read_temperature('C')
+            if isinstance(resistance_4_head_raw, float):
+                resistance_4_head_adj = resistance_4_head_raw + 34.56
+                # Only use adjusted value for temp conversion, and check for valid range
+                if resistance_4_head_adj is not None and resistance_4_head_adj > 0:
+                    temp_4_head_adj = convert_4head_resistance_to_temperature(resistance_4_head_adj)
+                    # If the result is suspiciously high, print debug info
+                    if temp_4_head_adj is not None and temp_4_head_adj > 10000:
+                        print(f"[DEBUG] 4-head resistance (adj): {resistance_4_head_adj}, temp: {temp_4_head_adj}")
+                else:
+                    temp_4_head_adj = None
             else:
-                temp_4_head = None
-            
-            # 3-pump temperature (Input D) - using centralized temperature reading
-            temp_3_pump_response = self.temp_reader.read_temperature('D')
-            if isinstance(temp_3_pump_response, float):
-                temp_3_pump = temp_3_pump_response
+                resistance_4_head_adj = None
+                temp_4_head_adj = None
+            # 3-pump: D4 voltage and converted temp (use voltage_to_temperature)
+            d4_voltage = self.temp_reader.read_sensor('D4')
+            if isinstance(d4_voltage, float):
+                d4_temp = voltage_to_temperature(d4_voltage)
             else:
-                temp_3_pump = None
-            
-            # 4-pump temperature (Channel 5) - using centralized temperature reading
-            temp_4_pump_response = self.temp_reader.read_temperature(5)
-            if isinstance(temp_4_pump_response, float):
-                temp_4_pump = temp_4_pump_response
+                d4_temp = None
+            # 4-pump: D5 voltage and converted temp (use voltage_to_temperature)
+            d5_voltage = self.temp_reader.read_sensor('D5')
+            if isinstance(d5_voltage, float):
+                d5_temp = voltage_to_temperature(d5_voltage)
             else:
-                temp_4_pump = None
-            
+                d5_temp = None
             return {
                 "timestamp": timestamp,
                 "date": date_str,
                 "time": time_str,
                 "temp_4k": temp_4k_val,
                 "temp_50k": temp_50k_val,
-                "temp_device": temp_device,
                 "resistance_3_head": resistance_3_head,
                 "temp_3_head": temp_3_head,
-                "resistance_4_head": resistance_4_head,
-                "temp_4_head": temp_4_head,
-                "temp_3_pump": temp_3_pump,
-                "temp_4_pump": temp_4_pump
+                "resistance_4_head_raw": resistance_4_head_raw,
+                "resistance_4_head_sub": resistance_4_head_adj,
+                "temp_4_head_sub": temp_4_head_adj,
+                "d4_voltage": d4_voltage,
+                "d4_temp": d4_temp,
+                "d5_voltage": d5_voltage,
+                "d5_temp": d5_temp
             }
-            
         except Exception as e:
             print(f"Error reading temperatures: {e}")
             return None
@@ -207,13 +200,15 @@ class TemperatureRecorder:
                 data["time"],
                 data["temp_4k"],
                 data["temp_50k"],
-                data["temp_device"],
                 data["resistance_3_head"],
                 data["temp_3_head"],
-                data["resistance_4_head"],
-                data["temp_4_head"],
-                data["temp_3_pump"],
-                data["temp_4_pump"]
+                data["resistance_4_head_raw"],
+                data["resistance_4_head_sub"],
+                data["temp_4_head_sub"],
+                data["d4_voltage"],
+                data["d4_temp"],
+                data["d5_voltage"],
+                data["d5_temp"]
             ]
             return row
         except Exception as e:
@@ -260,10 +255,13 @@ class TemperatureRecorder:
                         # 3-head temperature (3 decimal places)
                         formatted_value = f"{value:.3f}"
                     elif i == 8 and isinstance(value, float):
-                        # 4-head resistance (4 decimal places)
+                        # 4-head raw resistance (4 decimal places)
                         formatted_value = f"{value:.4f}"
                     elif i == 9 and isinstance(value, float):
-                        # 4-head temperature (3 decimal places)
+                        # 4-head subtracted resistance (4 decimal places)
+                        formatted_value = f"{value:.4f}"
+                    elif i == 10 and isinstance(value, float):
+                        # 4-head temperature from subtracted resistance (3 decimal places)
                         formatted_value = f"{value:.3f}"
                     elif isinstance(value, float):
                         # Other numbers (2 decimal places)

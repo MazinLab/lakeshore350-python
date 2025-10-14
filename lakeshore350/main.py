@@ -1,489 +1,176 @@
 #!/usr/bin/env python3
 """
-Main interface for Lakeshore 350 Driver
+Main interface for Lakeshore350 Driver 
 """
-
+# Requires outputs.py, temperature.py, head3_calibration.py, head4_calibration.py, pumps_calibration.py, lakeshore_display.py
 import argparse
 import serial
 from .temperature import TemperatureReader
-from .gl7_control import GL7Controller
-from .gl7 import test_sequence
 from .head3_calibration import convert_3head_resistance_to_temperature
 from .head4_calibration import convert_4head_resistance_to_temperature
-from .pump_calibration import convert_pump_voltage_to_temperature
+from .pumps_calibration import voltage_to_temperature
+from .outputs import OutputController
 
+## Defining all arguments 
 def main():
     parser = argparse.ArgumentParser(description="Lakeshore 350 Temperature Controller")
-    parser.add_argument("--port", default="/dev/ttyUSB2", help="Serial port (default: /dev/ttyUSB2)")
     parser.add_argument("--all", action="store_true", help="Read all inputs (A-D), scanner inputs (D2-D5), and all channels (1-8)")
     parser.add_argument("--info", action="store_true", help="Get device information")
-    
-    # GL7 automation arguments
-    parser.add_argument("--start-gl7", action="store_true", help="Start GL7 sorption cooler sequence (will be production version)")
-    
-    # Individual GL7 step arguments  
-    parser.add_argument("--gl7-step1", action="store_true", help="Execute GL7 Step 1: Initial Status Check")
-    parser.add_argument("--gl7-step2a", action="store_true", help="Execute GL7 Step 2A: Pre-cooling Phase")
-    parser.add_argument("--gl7-step2b", action="store_true", help="Execute GL7 Step 2B: Heat Switch Status Verification")
-    parser.add_argument("--gl7-step3", action="store_true", help="Execute GL7 Step 3: Pump Heating Phase")
-    parser.add_argument("--gl7-step4", action="store_true", help="Execute GL7 Step 4: 4He Pump Transition")
-    parser.add_argument("--gl7-step5", action="store_true", help="Execute GL7 Step 5: Cooling to 2K and 3He Pump Transition")
-    parser.add_argument("--gl7-step6", action="store_true", help="Execute GL7 Step 6: Final Cooldown Monitoring")
-    parser.add_argument("--gl7-step7", action="store_true", help="Execute GL7 Step 7: Final Status Check")
-    
-    # Test sequence arguments (all commands commented out for safe testing)
-    parser.add_argument("--start-gl7-test-sequence", action="store_true", help="Start GL7 TEST sequence (ALL COMMANDS COMMENTED OUT)")
-    parser.add_argument("--gl7-step1-test", action="store_true", help="Execute GL7 Step 1 TEST: Initial Status Check (safe)")
-    parser.add_argument("--gl7-step2a-test", action="store_true", help="Execute GL7 Step 2A TEST: Pre-cooling Phase (safe)")
-    parser.add_argument("--gl7-step2b-test", action="store_true", help="Execute GL7 Step 2B TEST: Heat Switch Verification (safe)")
-    parser.add_argument("--gl7-step3-test", action="store_true", help="Execute GL7 Step 3 TEST: Pump Heating Phase (safe)")
-    parser.add_argument("--gl7-step4-test", action="store_true", help="Execute GL7 Step 4 TEST: 4He Pump Transition (safe)")
-    parser.add_argument("--gl7-step5-test", action="store_true", help="Execute GL7 Step 5 TEST: 3He Pump Transition (safe)")
-    parser.add_argument("--gl7-step6-test", action="store_true", help="Execute GL7 Step 6 TEST: Final Cooldown (safe)")
-    
-    # Heater control arguments
-    parser.add_argument("--heaters", nargs=2, metavar=('OUTPUT', 'POWER'), help="Set heater output: --heaters <output_num> <power_percent>")
-    parser.add_argument("--heaters-both", nargs=2, type=float, metavar=('POWER1', 'POWER2'), help="Set both heaters: --heaters-both <power1> <power2>")
-    parser.add_argument("--heaters-query", action="store_true", help="Query current heater status")
-    parser.add_argument("--heaters-stop", action="store_true", help="EMERGENCY HEATER STOP: Immediately shut down both heaters")
 
-    # Heat switch control arguments
-    parser.add_argument("--switches", nargs=2, metavar=('SWITCH', 'STATE'), help="Set heat switch: --switches <switch_num> <ON/OFF>")
-    parser.add_argument("--switches-both", type=str, choices=['ON', 'OFF', 'on', 'off'], help="Set both switches to same state: --switches-both ON/OFF")
-    parser.add_argument("--switches-query", action="store_true", help="Query current heat switch status")
+    
+    # Output control arguments (replaces heater control)
+    parser.add_argument("--outputs-query", type=int, metavar='OUTPUT', help="Query output status: --outputs-query <output_num>")
+    parser.add_argument("--outputs-query-all", action="store_true", help="Query all outputs 1-4: --outputs-query-all")
+    parser.add_argument("--outputs-set", nargs=2, metavar=('OUTPUT', 'PERCENT'), help="Set output: --outputs-set <output_num> <percent>")
+    parser.add_argument("--outputs-set-params", nargs="?", const=True, metavar='PARAMS', help="Set output parameters: --outputs-set-params [<output_num,param1,param2,...>]")
+
 
     # Display control arguments
     parser.add_argument("--display", action="store_true", help="Check Lakeshore 350 front panel display status")
-    parser.add_argument("--set-name", nargs=2, metavar=('INPUT', 'NAME'), help="Set custom input name: --set-name <input> <name>")
 
     
     args = parser.parse_args()
-    
-    # If no specific action requested, default to reading all inputs and channels
-    if not any([args.all, args.info,
-                args.start_gl7, args.gl7_step1, args.gl7_step2a, args.gl7_step2b, args.gl7_step3,
-                args.gl7_step4, args.gl7_step5, args.gl7_step6, args.gl7_step7,
-                args.start_gl7_test_sequence, args.gl7_step1_test, args.gl7_step2a_test,
-                args.gl7_step2b_test, args.gl7_step3_test, args.gl7_step4_test,
-                args.gl7_step5_test, args.gl7_step6_test,
-                args.heaters, args.heaters_both, args.heaters_query, args.heaters_stop,
-                args.switches, args.switches_both, args.switches_query,
-                args.display, args.set_name]):
-        args.all = True
-    
+
     try:
-        temp_reader = TemperatureReader(port=args.port)
-        gl7_controller = GL7Controller(temp_reader)
-        
+        port = "/dev/ttyUSB2"
+        temp_reader = TemperatureReader(port=port)
+
+        # Reads lakeshore 350 hardware info 
         if args.info:
             print("Device Information:")
-            info = temp_reader.get_device_info()
+            import serial, time
+            ser = serial.Serial(port='/dev/ttyUSB2', baudrate=57600, bytesize=7, parity='O', stopbits=1, timeout=2)
+            ser.write(b'*IDN?\n')
+            time.sleep(0.3)
+            info = ser.readline().decode('ascii', errors='ignore').strip()
             print(f"  {info if info else 'No response'}")
+            ser.close()
             print()
 
+        # Prints all channels (temps and/or resistance/voltage)
         if args.all:
-            print("All Inputs (A-D):")
-            input_temps = temp_reader.read_all_inputs()
-            for input_name, temp in input_temps.items():
-                # Extract the input letter (A, B, C, D) from input_name like "Input_A"
-                input_letter = input_name.split('_')[1]
-                
-                if isinstance(temp, float):
-                    # Convert resistance to temperature for 3-head (A) and 4-head (C)
-                    if input_letter == 'A' and temp > 0:
-                        # Input A is 3-head resistance, convert to temperature
-                        calibrated_temp = convert_3head_resistance_to_temperature(temp)
-                        print(f"  Input A (3-head): {temp:.4f} Ω → {calibrated_temp:.3f} K")
-                    elif input_letter == 'C' and temp > 0:
-                        # Input C is 4-head resistance, convert to temperature
-                        calibrated_temp = convert_4head_resistance_to_temperature(temp)
-                        print(f"  Input C (4-head): {temp:.4f} Ω → {calibrated_temp:.3f} K")
-                    elif input_letter == 'B':
-                        # Input B is 1K GGG temperature reading
-                        print(f"  Input B (1K GGG): {temp:.3f} K")
-                    elif input_letter == 'D':
-                        # Input D (unused): reads ~0
-                        print(f"  Input D (unused): {temp:.3f} K")
+            print("Inputs:")
+            # Only read A, B, C
+            temp_a = temp_reader.read_temperature('A') # 3 head 
+            temp_b = temp_reader.read_temperature('B') # GGG
+            temp_c = temp_reader.read_temperature('C') # 4-head 
+
+            # 3 head resistance to temperature conversion 
+            # Requires head3_calibration.py and gl7_calibrations/3_head_cal.csv
+            # If resistance is out of range/negative, returns None for temp
+            if isinstance(temp_a, float):
+                temp_a_cal = convert_3head_resistance_to_temperature(temp_a)
+                if temp_a_cal is not None:
+                    print(f"  Input A (3-head): {temp_a:.4f} Ω → {temp_a_cal:.3f} K")
                 else:
-                    # Handle non-numeric readings
-                    if input_letter == 'A':
-                        print(f"  Input A (3-head): {temp}")
-                    elif input_letter == 'B':
-                        print(f"  Input B (1K GGG): {temp}")
-                    elif input_letter == 'C':
-                        print(f"  Input C (4-head): {temp}")
-                    elif input_letter == 'D':
-                        print(f"  Input D (unused): {temp}")
-            
-            print("\nScanner Inputs (D2-D5) and Channel 2:")
-            # Read all scanner inputs D2, D3, D4, D5 and Channel 2
-            ch2_temp = temp_reader.read_temperature(2)  # Channel 2 (50K stage)
+                    print(f"  Input A (3-head): {temp_a:.4f} Ω → None") 
+            else:
+                print(f"  Input A (3-head): {temp_a}")
+
+            # Input B prints direct temperature
+            if isinstance(temp_b, float):
+                print(f"  Input B (Empty): {temp_b:.3f} K")
+            else:
+                print(f"  Input B (Empty): {temp_b}") # Print w/out formatting for non number
+
+            # 4 head resistance to temperature conversion (add 34.56 to raw value)
+            # Print raw, calibrated, and temp from calibrated
+            if isinstance(temp_c, float):
+                temp_c_calibrated = temp_c + 34.56
+                temp_c_temp = convert_4head_resistance_to_temperature(temp_c_calibrated)
+                print(f"  Input C (4-head): {temp_c:.4f} Ω (raw), {temp_c_calibrated:.4f} Ω (calibrated) → ", end="")
+                if temp_c_temp is not None:
+                    print(f"{temp_c_temp:.3f} K")
+                else:
+                    print("None")
+            else:
+                print(f"  Input C (4-head): {temp_c}")
+
+
+            print("\nSpecial Inputs:")
+            d1_voltage = temp_reader.read_sensor('D1')
             d2_temp = temp_reader.read_temperature('D2')
-            d3_temp = temp_reader.read_temperature('D3') 
-            d4_temp = temp_reader.read_temperature('D4')
-            d5_temp = temp_reader.read_temperature('D5')
-            
-            # Process Channel 2 (50K stage)
-            if isinstance(ch2_temp, float):
-                print(f"  Channel 2 (50K stage): {ch2_temp:.3f} K")
+            d3_temp = temp_reader.read_temperature('D3')
+            d4_voltage = temp_reader.read_sensor('D4')
+            d5_voltage = temp_reader.read_sensor('D5')
+            # D1 (empty)
+            if isinstance(d1_voltage, float):
+                d1_temp = voltage_to_temperature(d1_voltage)
+                if d1_temp is not None:
+                    print(f"  D1 (empty): {d1_voltage:.4f} V → {d1_temp:.3f} K")
+                else:
+                    print(f"  D1 (empty): {d1_voltage:.4f} V → None")
             else:
-                print(f"  Channel 2 (50K stage): {ch2_temp}")
-            
-            # Process D2 (unused)
+                print(f"  D1 (empty): {d1_voltage}")
+            # D2 (50K)
             if isinstance(d2_temp, float):
-                print(f"  D2 (unused): {d2_temp:.3f} K")
+                print(f"  D2 (50K): {d2_temp:.3f} K")
             else:
-                print(f"  D2 (unused): {d2_temp}")
-            
-            # Process D3 (4K stage)
+                print(f"  D2 (50K): {d2_temp}")
+            # D3 (4K)
             if isinstance(d3_temp, float):
-                print(f"  D3 (4K stage): {d3_temp:.3f} K")
+                print(f"  D3 (4K): {d3_temp:.3f} K")
             else:
-                print(f"  D3 (4K stage): {d3_temp}")
-            
-            # Process D4 (unused)
-            if isinstance(d4_temp, float):
-                print(f"  D4 (unused): {d4_temp:.3f} K")
+                print(f"  D3 (4K): {d3_temp}")
+            # D4 (3-pump)
+            if isinstance(d4_voltage, float):
+                d4_temp = voltage_to_temperature(d4_voltage)
+                if d4_temp is not None:
+                    print(f"  D4 (3-pump): {d4_voltage:.4f} V → {d4_temp:.3f} K")
+                else:
+                    print(f"  D4 (3-pump): {d4_voltage:.4f} V → None")
             else:
-                print(f"  D4 (unused): {d4_temp}")
-            
-            # Process D5 (unused)
-            if isinstance(d5_temp, float):
-                print(f"  D5 (unused): {d5_temp:.3f} K")
+                print(f"  D4 (3-pump): {d4_voltage}")
+            # D5 (4-pump)
+            if isinstance(d5_voltage, float):
+                d5_temp = voltage_to_temperature(d5_voltage)
+                if d5_temp is not None:
+                    print(f"  D5 (4-pump): {d5_voltage:.4f} V → {d5_temp:.3f} K")
+                else:
+                    print(f"  D5 (4-pump): {d5_voltage:.4f} V → None")
             else:
-                print(f"  D5 (unused): {d5_temp}")
-            
-            print("\nAll Channels (1-8):")
-            # Read all channels 1-8
-            for channel in range(1, 9):
-                ch_temp = temp_reader.read_temperature(channel)
-                
-                # Add descriptive labels for known channels
-                if channel == 4:
-                    label = "3-pump"
-                elif channel == 5:
-                    label = "4-pump"
-                else:
-                    label = "unused"
-                
-                if isinstance(ch_temp, float):
-                    print(f"  Channel {channel} ({label}): {ch_temp:.3f} K")
-                else:
-                    print(f"  Channel {channel} ({label}): {ch_temp}")
-        
-        
-        # GL7 automation sequence (will be production version when commands are uncommented)
-        if args.start_gl7:
-            print("Starting GL7 Sorption Cooler Sequence...")
-            print("NOTE: Currently in TEST/SIMULATION mode - heater commands are commented out")
-            print("Stage Temperatures Don't Accurately Reflect Listed Channels/Inputs")
-            print("Press Ctrl+C to abort at any time\n")
-            
-            try:
-                success = gl7_controller.start_gl7_sequence()
-                if success:
-                    print("\nGL7 sequence completed successfully!")
-                else:
-                    print("\nGL7 sequence stopped due to safety conditions")
-            except KeyboardInterrupt:
-                print("\n\nGL7 sequence aborted by user")
-                print("All systems remain in their current state")
-        
-        # Individual GL7 step execution
-        if args.gl7_step1:
-            try:
-                result = gl7_controller.execute_step1()
-            except KeyboardInterrupt:
-                print("\nStep 1 aborted by user")
-        
-        if args.gl7_step2a:
-            try:
-                result = gl7_controller.execute_step2a()
-            except KeyboardInterrupt:
-                print("\nStep 2A aborted by user")
-        
-        if args.gl7_step2b:
-            try:
-                result = gl7_controller.execute_step2b()
-            except KeyboardInterrupt:
-                print("\nStep 2B aborted by user")
-        
-        if args.gl7_step3:
-            try:
-                result = gl7_controller.execute_step3()
-            except KeyboardInterrupt:
-                print("\nStep 3 aborted by user")
-        
-        if args.gl7_step4:
-            try:
-                result = gl7_controller.execute_step4()
-            except KeyboardInterrupt:
-                print("\nStep 4 aborted by user")
-        
-        if args.gl7_step5:
-            try:
-                result = gl7_controller.execute_step5()
-            except KeyboardInterrupt:
-                print("\nStep 5 aborted by user")
-        
-        if args.gl7_step6:
-            try:
-                result = gl7_controller.execute_step6()
-            except KeyboardInterrupt:
-                print("\nStep 6 aborted by user")
-        
-        if args.gl7_step7:
-            print("Executing GL7 Step 7: Final Status Check")
-            print("=" * 50)
-            try:
-                result = gl7_controller.execute_step7()
-                print(f"Step 7 completed. GL7 Running: {result}")
-            except KeyboardInterrupt:
-                print("\nStep 7 aborted by user")
-        
-        # Test sequence handling (all commands commented out for safety)
-        if args.start_gl7_test_sequence:
-            print("Starting GL7 TEST SEQUENCE - ALL COMMANDS COMMENTED OUT")
-            print("=" * 60)
-            print("This is a safe test version with no actual heater activation")
-            print("=" * 60)
-            try:
-                # Execute full test sequence
-                test_sequence.execute_step1_test(gl7_controller)
-                test_sequence.execute_step2a_test(gl7_controller)
-                test_sequence.execute_step2b_test(gl7_controller)
-                test_sequence.execute_step3_test(gl7_controller)
-                test_sequence.execute_step4_test(gl7_controller)
-                test_sequence.execute_step5_test(gl7_controller)
-                result = test_sequence.execute_step6_test(gl7_controller)
-                print(f"GL7 TEST SEQUENCE completed. Result: {result}")
-            except KeyboardInterrupt:
-                print("\nGL7 Test sequence aborted by user")
-        
-        if args.gl7_step1_test:
-            print("Executing GL7 Step 1 TEST: Initial Status Check (SAFE)")
-            print("=" * 50)
-            try:
-                result = test_sequence.execute_step1_test(gl7_controller)
-                print(f"Step 1 TEST completed. Result: {result}")
-            except KeyboardInterrupt:
-                print("\nStep 1 TEST aborted by user")
-        
-        if args.gl7_step2a_test:
-            print("Executing GL7 Step 2A TEST: Pre-cooling Phase (SAFE)")
-            print("=" * 50)
-            try:
-                result = test_sequence.execute_step2a_test(gl7_controller)
-                print(f"Step 2A TEST completed. Result: {result}")
-            except KeyboardInterrupt:
-                print("\nStep 2A TEST aborted by user")
-        
-        if args.gl7_step2b_test:
-            print("Executing GL7 Step 2B TEST: Heat Switch Verification (SAFE)")
-            print("=" * 50)
-            try:
-                result = test_sequence.execute_step2b_test(gl7_controller)
-                print(f"Step 2B TEST completed. Result: {result}")
-            except KeyboardInterrupt:
-                print("\nStep 2B TEST aborted by user")
-        
-        if args.gl7_step3_test:
-            print("Executing GL7 Step 3 TEST: Pump Heating Phase (SAFE)")
-            print("=" * 50)
-            try:
-                result = test_sequence.execute_step3_test(gl7_controller)
-                print(f"Step 3 TEST completed. Result: {result}")
-            except KeyboardInterrupt:
-                print("\nStep 3 TEST aborted by user")
-        
-        if args.gl7_step4_test:
-            print("Executing GL7 Step 4 TEST: 4He Pump Transition (SAFE)")
-            print("=" * 50)
-            try:
-                result = test_sequence.execute_step4_test(gl7_controller)
-                print(f"Step 4 TEST completed. Result: {result}")
-            except KeyboardInterrupt:
-                print("\nStep 4 TEST aborted by user")
-        
-        if args.gl7_step5_test:
-            print("Executing GL7 Step 5 TEST: 3He Pump Transition (SAFE)")
-            print("=" * 50)
-            try:
-                result = test_sequence.execute_step5_test(gl7_controller)
-                print(f"Step 5 TEST completed. Result: {result}")
-            except KeyboardInterrupt:
-                print("\nStep 5 TEST aborted by user")
-        
-        if args.gl7_step6_test:
-            print("Executing GL7 Step 6 TEST: Final Cooldown (SAFE)")
-            print("=" * 50)
-            try:
-                result = test_sequence.execute_step6_test(gl7_controller)
-                print(f"Step 6 TEST completed. Result: {result}")
-            except KeyboardInterrupt:
-                print("\nStep 6 TEST aborted by user")
-        
-        # Heater control handling
-        if args.heaters or args.heaters_both or args.heaters_query or args.heaters_stop:
-            from .heaters import set_heater_output, query_heater_status, emergency_stop_heaters
-            import time
-            
-            if args.heaters_stop:
-                # Emergency stop mode
-                success = emergency_stop_heaters(gl7_controller)
-                if success:
-                    print("\nEmergency heater stop completed successfully.")
-                else:
-                    print("\nWarning: Some heaters may not have been shut down correctly.")
-                    
-            elif args.heaters_query:
-                # Query mode - just show current status
-                print("\nCurrent Heater Status:")
-                query_heater_status(gl7_controller, 1)
-                query_heater_status(gl7_controller, 2)
-                
-            elif args.heaters_both:
-                # Set both heaters
-                print("\nSetting Both Heaters:")
-                success1 = set_heater_output(gl7_controller, 1, args.heaters_both[0])
-                success2 = set_heater_output(gl7_controller, 2, args.heaters_both[1])
-                
-                # Wait a moment for commands to take effect
-                time.sleep(1)
-                
-                # Query status after setting
-                print("\nHeater Status After Setting:")
-                query_heater_status(gl7_controller, 1)
-                query_heater_status(gl7_controller, 2)
-                
-                if success1 and success2:
-                    print("\nBoth heaters set successfully.")
-                else:
-                    print("\nWarning: One or more heaters may not have been set correctly.")
-                    
-            elif args.heaters:
-                # Set single heater
+                print(f"  D5 (4-pump): {d5_voltage}")
+
+        # Outputs (heaters and switches
+        # Connects to outputs.py 
+        # Output 1: 4-pump heater, Output2: 3-pump heater, Output 3: 4 switch, Output 4: 3 switch
+        if args.outputs_query is not None or args.outputs_query_all or args.outputs_set is not None or args.outputs_set_params is not None:
+            output_ctrl = OutputController(port=port)
+            if args.outputs_query is not None:
+                output_ctrl.query_outputs(args.outputs_query)
+            if args.outputs_query_all:
+                for i in [1, 2, 3, 4]:
+                    output_ctrl.query_outputs(i)
+            if args.outputs_set is not None:
                 try:
-                    output_num = int(args.heaters[0])
-                    power_percent = float(args.heaters[1])
-                    
-                    if output_num not in [1, 2]:
-                        print("Error: Output number must be 1 or 2")
-                        return
-                    if power_percent < 0 or power_percent > 100:
-                        print("Error: Power must be between 0 and 100")
-                        return
-                    
-                    heater_name = "4-pump Heater" if output_num == 1 else "3-pump Heater"
-                    print(f"\nSetting {heater_name}:")
-                    success = set_heater_output(gl7_controller, output_num, power_percent)
-                    
-                    # Wait a moment for commands to take effect
-                    time.sleep(1)
-                    
-                    # Query status after setting
-                    print(f"\n{heater_name} Status After Setting:")
-                    query_heater_status(gl7_controller, output_num)
-                    
-                    if success:
-                        print(f"\n{heater_name} set successfully.")
-                    else:
-                        print(f"\nWarning: {heater_name} may not have been set correctly.")
-                        
+                    output_num = int(args.outputs_set[0])
+                    percent = float(args.outputs_set[1])
                 except (ValueError, IndexError):
-                    print("Error: Invalid arguments for --heaters. Use: --heaters <output_num> <power_percent>")
+                    print("Error: Invalid arguments for --outputs-set. Use: --outputs-set <output_num> <percent>")
                     return
-        
-        # Heat switch control handling
-        if args.switches or args.switches_both or args.switches_query:
-            from .switches import set_switch_state, query_switch_status
-            import time
-            
-            if args.switches_query:
-                # Query mode - just show current status
-                print("\nCurrent Heat Switch Status:")
-                query_switch_status(gl7_controller, 3)  # 4-switch
-                query_switch_status(gl7_controller, 4)  # 3-switch
-                
-            elif args.switches_both:
-                # Set both switches
-                state = args.switches_both.upper()
-                set_switch_state(gl7_controller, 3, state)  # 4-switch
-                set_switch_state(gl7_controller, 4, state)  # 3-switch
-                
-                # Wait a moment for commands to take effect
-                time.sleep(1)
-                
-                # Show status of both switches
-                query_switch_status(gl7_controller, 3)  # 4-switch
-                query_switch_status(gl7_controller, 4)  # 3-switch
-                    
-            elif args.switches:
-                # Set single switch
-                try:
-                    switch_num = int(args.switches[0])
-                    state = args.switches[1].upper()
-                    
-                    if switch_num not in [3, 4]:
-                        print("Error: Switch number must be 3 (for 4-switch) or 4 (for 3-switch)")
+                output_ctrl.set_outputs(output_num, percent)
+            if args.outputs_set_params is not None:
+                if args.outputs_set_params is True:
+                    # No params provided, use interactive prompt
+                    output_ctrl.set_output_params()
+                else:
+                    try:
+                        parts = [p.strip() for p in args.outputs_set_params.split(',')]
+                        output_num = int(parts[0])
+                        params = [float(p) if '.' in p or 'e' in p.lower() else int(p) for p in parts[1:]]
+                    except Exception:
+                        print("Error: Invalid arguments for --outputs-set-params. Use: --outputs-set-params <output_num,param1,param2,...>")
                         return
-                    if state not in ['ON', 'OFF']:
-                        print("Error: State must be ON or OFF")
-                        return
-                    
-                    set_switch_state(gl7_controller, switch_num, state)
-                    
-                    # Wait a moment for commands to take effect
-                    time.sleep(1)
-                    
-                    # Show status of both switches
-                    query_switch_status(gl7_controller, 3)  # 4-switch
-                    query_switch_status(gl7_controller, 4)  # 3-switch
-                        
-                except (ValueError, IndexError):
-                    print("Error: Invalid arguments for --switches. Use: --switches <switch_num> <ON/OFF>")
-                    return
+                    output_ctrl.set_output_params(output_num, params)
         
-        # Display control handling
+        
+        # Shows current lakeshore front panel 
         if args.display:
             from .lakeshore_display import check_front_panel_display
-            check_front_panel_display(gl7_controller=gl7_controller)
+            check_front_panel_display(port=port)
         
-        # Set input name handling
-        if args.set_name:
-            import time
-            
-            input_name = args.set_name[0].upper()
-            custom_name = args.set_name[1]
-            
-            # Validate input name
-            valid_inputs = ['A', 'B', 'C', 'D', 'D2', 'D3', 'D4', 'D5']
-            if input_name not in valid_inputs:
-                print(f"Error: Input must be one of {valid_inputs}")
-                return
-            
-            # Validate name length (Lakeshore 350 has a character limit)
-            if len(custom_name) > 15:
-                print("Error: Name must be 15 characters or less")
-                return
-            
-            print(f"Setting {input_name} name to \"{custom_name}\"")
-            
-            try:
-                # Set the custom name
-                gl7_controller.send_command(f'INNAME {input_name},"{custom_name}"')
-                
-                # Wait a moment for the command to take effect
-                time.sleep(0.5)
-                
-                # Verify the change
-                new_name = gl7_controller.send_command(f'INNAME? {input_name}')
-                print(f"Confirmed: {input_name} = \"{new_name}\"")
-                
-            except Exception as e:
-                print(f"Error setting input name: {e}")
 
-    
+    # Handle serial connection issue
     except serial.SerialException as e:
         print(f"Serial connection error: {e}")
         print("Make sure the Lakeshore 350 is connected and the port is correct.")
