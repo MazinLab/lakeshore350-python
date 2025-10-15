@@ -139,7 +139,8 @@ class OutputController:
         if not (0 <= percent <= 100):
             print("Percent must be between 0 and 100.")
             return
-        cmd = f'MOUT (Manual Output Percentage:) {output_num}, {percent}\n'.encode('ascii')
+        # cmd = f'MOUT (Manual Output Percentage:) {output_num}, {percent}\n'.encode('ascii')
+        cmd = f'MOUT {output_num},{percent}\n'.encode('ascii')
         self.ser.write(cmd)
         time.sleep(0.2)
         print(f"Set Output {output_num} to {percent}%")
