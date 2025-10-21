@@ -2,7 +2,7 @@
 """
 Main interface for Lakeshore350 Driver 
 """
-# Requires outputs.py, temperature.py, head3_calibration.py, head4_calibration.py, pumps_calibration.py, lakeshore_display.py
+# Requires outputs.py, temperature.py, head3_calibration.py, head4_calibration.py, pumps_calibration.py
 import argparse
 import serial
 from .temperature import TemperatureReader
@@ -24,10 +24,11 @@ def main():
     parser.add_argument("--outputs-set", nargs=2, metavar=('OUTPUT', 'PERCENT'), help="Set output: --outputs-set <output_num> <percent>")
     parser.add_argument("--outputs-set-params", nargs="?", const=True, metavar='PARAMS', help="Set output parameters: --outputs-set-params [<output_num,param1,param2,...>")
     parser.add_argument("--outputs-set-range", nargs=2, metavar=('OUTPUT', 'RANGE'), help="Set heater range: --outputs-set-range <output_num> <range_val>")
+    parser.add_argument("--display-show", metavar='INPUT', help="Show panel display INNAME for a specific input (e.g. A or D1)")
+    parser.add_argument("--display-show-all", action='store_true', help="Show INNAME for all known inputs")
+    parser.add_argument("--display-set-name", nargs='+', metavar=('INPUT','NAME'), help='Set panel display name: --display-set-name <INPUT> "<NAME>" ')
 
 
-    # Display control arguments
-    parser.add_argument("--display", action="store_true", help="Check Lakeshore 350 front panel display status")
 
     
     args = parser.parse_args()
@@ -39,7 +40,7 @@ def main():
         # Reads lakeshore 350 hardware info 
         if args.info:
             print("Device Information:")
-            import serial, time
+            import time
             ser = serial.Serial(port='/dev/ttyUSB2', baudrate=57600, bytesize=7, parity='O', stopbits=1, timeout=2)
             ser.write(b'*IDN?\n')
             time.sleep(0.3)
@@ -132,6 +133,28 @@ def main():
             else:
                 print(f"  D5 (4-pump): {d5_voltage}")
 
+        # Display queries
+        if args.display_show is not None or args.display_show_all:
+            from .panel_display import show_display
+            if args.display_show_all:
+                show_display(port=port, input_name='ALL')
+            else:
+                show_display(port=port, input_name=args.display_show)
+
+        # Set display name
+        if args.display_set_name is not None:
+            from .panel_display import set_name
+            try:
+                inp = args.display_set_name[0]
+                # join the remaining tokens to allow spaces in the name
+                name = ' '.join(args.display_set_name[1:])
+                if not name:
+                    raise ValueError('empty name')
+            except Exception:
+                print("Error: Invalid arguments for --display-set-name. Use: --display-set-name <INPUT> <NAME>")
+                return
+            set_name(port=port, input_name=inp, name=name)
+
         # Outputs (heaters and switches
         # Connects to outputs.py 
         # Output 1: 4-pump heater, Output2: 3-pump heater, Output 3: 4 switch, Output 4: 3 switch
@@ -177,10 +200,7 @@ def main():
                 output_ctrl.set_heater_range(output_num, range_val)
         
         
-        # Shows current lakeshore front panel 
-        if args.display:
-            from .lakeshore_display import check_front_panel_display
-            check_front_panel_display(port=port)
+        
         
 
     # Handle serial connection issue

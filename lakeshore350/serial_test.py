@@ -84,5 +84,23 @@ ser = serial.Serial(port='/dev/ttyUSB2', baudrate=57600, bytesize=7, parity='O',
 # outmode4 = ser.readline().decode('ascii', errors='ignore').strip()
 # print(f"OUTMODE Output 4: {outmode4}")
 
+# # Query Input Display Names
+# ser.write(b'INNAME? A\n')
+# time.sleep(0.2)
+# inname_a = ser.readline().decode('ascii', errors='ignore').strip()
+# print(f"Input Display Name A: {inname_a}")
+
+# # Query Input Display Names
+# ser.write(b'INNAME? D1\n')
+# time.sleep(0.2)
+# inname_d1 = ser.readline().decode('ascii', errors='ignore').strip()
+# print(f"Input Display Name D1: {inname_d1}")
+
+# Change Input Display Name D5 to "TEST_NAME"
+ser.write(b'INNAME D5,"TEST_NAME"\n')
+time.sleep(0.2)
+inname_d5 = ser.readline().decode('ascii', errors='ignore').strip()
+print(f"Input Display Name D5: {inname_d5}")
+
 
 ser.close()
