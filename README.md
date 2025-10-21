@@ -27,6 +27,32 @@ Get device information:
 ```bash
 lakeshore350 --info
 ```
+
+## Recording Temperatures 
+### Calibrating GL7 Temperatures
+The MEC 4K and 50K thermometers are read out in sensor units and calibrated directly on the lakeshore. The GL7 thermometry must be calibrated in software currently.  
+
+
+For example, to request a sensor reading from the 3-head, we use ```read_sensor``` from ```TemperatureReader``` in ```temperature.py```. Then we import ```from .head3_calibration import convert_3head_resistance_to_temperature```. This function connects to the 3-head calibration .csv file located in ```\gl7_calibrations```. There is a calibration .csv for the 3-head, 4-head, and pumps/switches. There are also python files for creating the calibration for the 3-head, 4-head, and pumps/switches. These python files create linear interpolations based on the data provided in the calibration csv's. They can be called upon by their function, i.e. ```convert_3head_resistance_to_temperature``` to quickly convert a sensor measurement to a temperature. 
+
+***Note the 4head calibration has a fudge factor currently, needs to be addressed for a more exact measurement. 
+
+### ```temperature.py```
+This is the primary python script that queries temperatures and sensor readings for the lakeshore350. The functionality from ```temperature.py``` is implimented in the whole repo. For inputs that directly have temperature outputs (or are calibrated directly on the lakeshore) like the 4K plate, we use the ```read_temperature``` function. For outputs that are read in sensor units like the 3-head, 4-head, 3-pump, or 4-pump, we use the ```read_sensor``` function.  
+
+This script also includes the ```send_command``` function which allows us to send serial commands directly to the lakeshore. ```temperature.py``` does not convert sensor units to temperature, this is performed within ```main.py``` or ```record_temps.py```. It simply defines the functions for querying these sensor readings, or temperature readings, and then the calibrations are handled wherever the temperature is requested like ```main.py``` or ```record_temps.py```. 
+### ```record_temps.py```
+```record_temps.py``` should be run in a tmux pane whenever the fridge is running. Running this script will automatically create a .csv with the date in the ```\temps``` folder. If the folder doesn't exist yet it will create it. If you run ```record_temps.py``` multiple times in one day, it will append a number to the end of each .csv to differentiate them. 
+
+```record_temps.py``` uses the ```TemperatureReader``` class from ```lakeshore350/temperature.py```. It will query the temperatures from the lakeshore every 30 minutes and print them as command line output and in the .csv. Currently, ```record_temps.py``` records:  
+1) date  
+2) time  
+3) 4K temperature  
+4) 50K temperature  
+5) 3-head resistance and temperature
+6) 4-head resistance, adjusted resistanced, and temperature from adjusted resistance
+7) 3-pump voltage and temperature  
+8) 4-pump voltage and temperature  
 ## Heaters/Switches (Outputs 1-4)
 
 ### Basic Command Line Functionality
