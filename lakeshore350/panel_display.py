@@ -72,3 +72,26 @@ def set_name(port: str = '/dev/ttyUSB2', input_name: str = 'D5', name: str = 'TE
                 ser.close()
         except Exception:
             pass
+
+
+def get_display_name(port: str = '/dev/ttyUSB2', input_name: str = 'D1') -> str:
+    """Query the panel for INNAME? <input> and return the name (or None on error).
+
+    Returns the stripped response string or None if there was an error or no response.
+    """
+    ser = None
+    try:
+        ser = serial.Serial(port=port, baudrate=57600, bytesize=7, parity='O', stopbits=1, timeout=2)
+        cmd = f'INNAME? {input_name}\n'.encode('ascii')
+        ser.write(cmd)
+        time.sleep(0.2)
+        resp = ser.readline().decode('ascii', errors='ignore').strip()
+        return resp if resp else None
+    except Exception:
+        return None
+    finally:
+        try:
+            if ser is not None:
+                ser.close()
+        except Exception:
+            pass

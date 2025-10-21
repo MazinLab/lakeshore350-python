@@ -28,6 +28,9 @@ def main():
 
     # Display control arguments
     parser.add_argument("--display", action="store_true", help="Check Lakeshore 350 front panel display status")
+    parser.add_argument("--display-show", metavar='INPUT', help="Show panel display INNAME for a specific input (e.g. A or D1)")
+    parser.add_argument("--display-show-all", action='store_true', help="Show INNAME for all known inputs")
+    parser.add_argument("--display-set-name", nargs='+', metavar=('INPUT','NAME'), help='Set panel display name: --display-set-name <INPUT> "<NAME>" ')
 
     
     args = parser.parse_args()
@@ -39,7 +42,7 @@ def main():
         # Reads lakeshore 350 hardware info 
         if args.info:
             print("Device Information:")
-            import serial, time
+            import time
             ser = serial.Serial(port='/dev/ttyUSB2', baudrate=57600, bytesize=7, parity='O', stopbits=1, timeout=2)
             ser.write(b'*IDN?\n')
             time.sleep(0.3)
@@ -52,9 +55,18 @@ def main():
         if args.all:
             print("Inputs:")
             # Only read A, B, C
-            temp_a = temp_reader.read_temperature('A') # 3 head 
-            temp_b = temp_reader.read_temperature('B') # GGG
-            temp_c = temp_reader.read_temperature('C') # 4-head 
+            temp_a = temp_reader.read_temperature('A')
+            temp_b = temp_reader.read_temperature('B')
+            temp_c = temp_reader.read_temperature('C')
+
+            # try to get display names for A-C from the front panel
+            from .panel_display import get_display_name
+            a_display = get_display_name(port=port, input_name='A') or '3-head'
+            b_display = get_display_name(port=port, input_name='B') or 'Empty'
+            c_display = get_display_name(port=port, input_name='C') or '4-head'
+            a_label = f"Input A ({a_display})"
+            b_label = f"Input B ({b_display})"
+            c_label = f"Input C ({c_display})"
 
             # 3 head resistance to temperature conversion 
             # Requires head3_calibration.py and gl7_calibrations/3_head_cal.csv
@@ -62,30 +74,30 @@ def main():
             if isinstance(temp_a, float):
                 temp_a_cal = convert_3head_resistance_to_temperature(temp_a)
                 if temp_a_cal is not None:
-                    print(f"  Input A (3-head): {temp_a:.4f} Ω → {temp_a_cal:.3f} K")
+                    print(f"  {a_label}: {temp_a:.4f} Ω → {temp_a_cal:.3f} K")
                 else:
-                    print(f"  Input A (3-head): {temp_a:.4f} Ω → None") 
+                    print(f"  {a_label}: {temp_a:.4f} Ω → None") 
             else:
-                print(f"  Input A (3-head): {temp_a}")
+                print(f"  {a_label}: {temp_a}")
 
             # Input B prints direct temperature
             if isinstance(temp_b, float):
-                print(f"  Input B (Empty): {temp_b:.3f} K")
+                print(f"  {b_label}: {temp_b:.3f} K")
             else:
-                print(f"  Input B (Empty): {temp_b}") # Print w/out formatting for non number
+                print(f"  {b_label}: {temp_b}") # Print w/out formatting for non number
 
             # 4 head resistance to temperature conversion
             # Print raw, calibrated, and temp from calibrated
             if isinstance(temp_c, float):
                 temp_c_calibrated = temp_c + 34.56 #fudge factor for calibration
                 temp_c_temp = convert_4head_resistance_to_temperature(temp_c_calibrated)
-                print(f"  Input C (4-head): {temp_c:.4f} Ω (raw), {temp_c_calibrated:.4f} Ω (calibrated) → ", end="")
+                print(f"  {c_label}: {temp_c:.4f} Ω (raw), {temp_c_calibrated:.4f} Ω (calibrated) → ", end="")
                 if temp_c_temp is not None:
                     print(f"{temp_c_temp:.3f} K")
                 else:
                     print("None")
             else:
-                print(f"  Input C (4-head): {temp_c}")
+                print(f"  {c_label}: {temp_c}")
 
 
             print("\nSpecial Inputs:")
@@ -94,43 +106,62 @@ def main():
             d3_temp = temp_reader.read_temperature('D3')
             d4_voltage = temp_reader.read_sensor('D4')
             d5_voltage = temp_reader.read_sensor('D5')
-            # D1 (empty)
+            
+
+            from .panel_display import get_display_name
+            
+            d1_display = get_display_name(port=port, input_name='D1') or 'Empty'
+            d2_display = get_display_name(port=port, input_name='D2') or '50K'
+            d3_display = get_display_name(port=port, input_name='D3') or '4K'
+            d4_display = get_display_name(port=port, input_name='D4') or '3-pump'
+            d5_display = get_display_name(port=port, input_name='D5') or '4-pump'
+            d1_name = f"Input D1 ({d1_display})"
+            
+            if 'stage' in d2_display.lower() or d2_display.lower().endswith('k'):
+                d2_name = f"Input D2 ({d2_display})"
+            else:
+                d2_name = f"Input D2 ({d2_display} Stage)"
+            d3_name = f"Input D3 ({d3_display})"
+            d4_name = f"Input D4 ({d4_display})"
+            d5_name = f"Input D5 ({d5_display})"
+
+            # D1
             if isinstance(d1_voltage, float):
                 d1_temp = voltage_to_temperature(d1_voltage)
                 if d1_temp is not None:
-                    print(f"  D1 (empty): {d1_voltage:.4f} V → {d1_temp:.3f} K")
+                    print(f"  {d1_name}: {d1_voltage:.4f} V → {d1_temp:.3f} K")
                 else:
-                    print(f"  D1 (empty): {d1_voltage:.4f} V → None")
+                    print(f"  {d1_name}: {d1_voltage:.4f} V → None")
             else:
-                print(f"  D1 (empty): {d1_voltage}")
-            # D2 (50K)
+                print(f"  {d1_name}: {d1_voltage}")
+            # D2
             if isinstance(d2_temp, float):
-                print(f"  D2 (50K): {d2_temp:.3f} K")
+                print(f"  {d2_name}: {d2_temp:.3f} K")
             else:
-                print(f"  D2 (50K): {d2_temp}")
-            # D3 (4K)
+                print(f"  {d2_name}: {d2_temp}")
+            # D3
             if isinstance(d3_temp, float):
-                print(f"  D3 (4K): {d3_temp:.3f} K")
+                print(f"  {d3_name}: {d3_temp:.3f} K")
             else:
-                print(f"  D3 (4K): {d3_temp}")
-            # D4 (3-pump)
+                print(f"  {d3_name}: {d3_temp}")
+            # D4
             if isinstance(d4_voltage, float):
                 d4_temp = voltage_to_temperature(d4_voltage)
                 if d4_temp is not None:
-                    print(f"  D4 (3-pump): {d4_voltage:.4f} V → {d4_temp:.3f} K")
+                    print(f"  {d4_name}: {d4_voltage:.4f} V → {d4_temp:.3f} K")
                 else:
-                    print(f"  D4 (3-pump): {d4_voltage:.4f} V → None")
+                    print(f"  {d4_name}: {d4_voltage:.4f} V → None")
             else:
-                print(f"  D4 (3-pump): {d4_voltage}")
-            # D5 (4-pump)
+                print(f"  {d4_name}: {d4_voltage}")
+            # D5
             if isinstance(d5_voltage, float):
                 d5_temp = voltage_to_temperature(d5_voltage)
                 if d5_temp is not None:
-                    print(f"  D5 (4-pump): {d5_voltage:.4f} V → {d5_temp:.3f} K")
+                    print(f"  {d5_name}: {d5_voltage:.4f} V → {d5_temp:.3f} K")
                 else:
-                    print(f"  D5 (4-pump): {d5_voltage:.4f} V → None")
+                    print(f"  {d5_name}: {d5_voltage:.4f} V → None")
             else:
-                print(f"  D5 (4-pump): {d5_voltage}")
+                print(f"  {d5_name}: {d5_voltage}")
 
         # Outputs (heaters and switches
         # Connects to outputs.py 
@@ -181,6 +212,25 @@ def main():
         if args.display:
             from .lakeshore_display import check_front_panel_display
             check_front_panel_display(port=port)
+        # display show and set-name handlers (maintain backwards capability)
+        if args.display_show is not None or args.display_show_all:
+            from .panel_display import show_display
+            if args.display_show_all:
+                show_display(port=port, input_name='ALL')
+            else:
+                show_display(port=port, input_name=args.display_show)
+
+        if args.display_set_name is not None:
+            from .panel_display import set_name
+            try:
+                inp = args.display_set_name[0]
+                name = ' '.join(args.display_set_name[1:])
+                if not name:
+                    raise ValueError('empty name')
+            except Exception:
+                print("Error: Invalid arguments for --display-set-name. Use: --display-set-name <INPUT> <NAME>")
+                return
+            set_name(port=port, input_name=inp, name=name)
         
 
     # Handle serial connection issue
