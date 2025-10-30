@@ -76,46 +76,67 @@ class OutputController:
             time.sleep(0.2)
             print(f"Sent: ANALOG {output_num},{param_str}")
 
-    def query_outputs(self, output_num):
+    def query_outputs(self, output_num, suppress_print=False):
         # Query using MOUT, OUTMODE, HTRSET, HTR, AOUT, ANALOG
+        output_lines = []
         if output_num not in [1, 2, 3, 4]:
-            print("Output number must be 1, 2, 3, or 4.")
-            return
+            msg = "Output number must be 1, 2, 3, or 4."
+            if not suppress_print:
+                print(msg)
+            return msg
         cmd = f'MOUT? {output_num}\n'.encode('ascii')
         self.ser.write(cmd)
         time.sleep(0.2)
         response = self.ser.readline().decode('ascii', errors='ignore').strip()
-        print(f"MOUT (Manual Output Percentage) {output_num} Status: {response}")
+        line = f"MOUT (Manual Output Percentage) {output_num} Status: {response}"
+        output_lines.append(line)
+        if not suppress_print:
+            print(line)
         # Query HTR? and HTRSET? for outputs 1 and 2
         if output_num in [1, 2]:
             htr_cmd = f'HTR? {output_num}\n'.encode('ascii')
             self.ser.write(htr_cmd)
             time.sleep(0.2)
             htr_response = self.ser.readline().decode('ascii', errors='ignore').strip()
-            print(f"HTR? {output_num} : {htr_response}")
+            line = f"HTR? {output_num} : {htr_response}"
+            output_lines.append(line)
+            if not suppress_print:
+                print(line)
             htrset_cmd = f'HTRSET? {output_num}\n'.encode('ascii')
             self.ser.write(htrset_cmd)
             time.sleep(0.2)
             htrset_response = self.ser.readline().decode('ascii', errors='ignore').strip()
-            print(f"HTRSET? (<htr resistance>,<max current>,<max user current>,<current/power>) {output_num} : {htrset_response}")
+            line = f"HTRSET? (<htr resistance>,<max current>,<max user current>,<current/power>) {output_num} : {htrset_response}"
+            output_lines.append(line)
+            if not suppress_print:
+                print(line)
         # Query AOUT? and ANALOG? for outputs 3 and 4
         if output_num in [3, 4]:
             aout_cmd = f'AOUT? {output_num}\n'.encode('ascii')
             self.ser.write(aout_cmd)
             time.sleep(0.2)
             aout_response = self.ser.readline().decode('ascii', errors='ignore').strip()
-            print(f"AOUT? {output_num} Status: {aout_response}")
+            line = f"AOUT? {output_num} Status: {aout_response}"
+            output_lines.append(line)
+            if not suppress_print:
+                print(line)
             analog_cmd = f'ANALOG? {output_num}\n'.encode('ascii')
             self.ser.write(analog_cmd)
             time.sleep(0.2)
             analog_response = self.ser.readline().decode('ascii', errors='ignore').strip()
-            print(f"ANALOG? {output_num} Status: {analog_response}")
+            line = f"ANALOG? {output_num} Status: {analog_response}"
+            output_lines.append(line)
+            if not suppress_print:
+                print(line)
         # Query OUTMODE? for all outputs 1-4
         outmode_cmd = f'OUTMODE? {output_num}\n'.encode('ascii')
         self.ser.write(outmode_cmd)
         time.sleep(0.2)
         outmode_response = self.ser.readline().decode('ascii', errors='ignore').strip()
-        print(f"OUTMODE? {output_num} Status: {outmode_response}")
+        line = f"OUTMODE? {output_num} Status: {outmode_response}"
+        output_lines.append(line)
+        if not suppress_print:
+            print(line)
 
         # Query RANGE? for all outputs 1-4 (robust, with error handling)
         try:
@@ -123,11 +144,17 @@ class OutputController:
             self.ser.write(range_cmd)
             time.sleep(0.2)
             range_response = self.ser.readline().decode('ascii', errors='ignore').strip()
-            print(f"RANGE? {output_num} Status: {range_response}")
+            line = f"RANGE? {output_num} Status: {range_response}"
+            output_lines.append(line)
+            if not suppress_print:
+                print(line)
         except Exception as e:
-            print(f"Error querying RANGE? for output {output_num}: {e}")
+            line = f"Error querying RANGE? for output {output_num}: {e}"
+            output_lines.append(line)
+            if not suppress_print:
+                print(line)
 
-        return response
+        return "\n".join(output_lines)
 
     def set_outputs(self, output_num, percent):
         """

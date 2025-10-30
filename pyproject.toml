@@ -13,6 +13,7 @@ readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
     "pyserial"
+    , "PyQt5 >= 5.15"
 ]
 
 [project.urls]
@@ -20,3 +21,6 @@ Homepage = "https://github.com/MazinLab/lakeshore350-python"
 
 [project.scripts]
 lakeshore350 = "lakeshore350.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
