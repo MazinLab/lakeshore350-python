@@ -61,10 +61,10 @@ ser = serial.Serial(port='/dev/ttyUSB2', baudrate=57600, bytesize=7, parity='O',
 # print("Returns <input>,<units>,<high value>,<low value>,<polarity>[term]")
 
 # Query AOUT output 3
-# ser.write(b'MOUT? 3\n')
-# time.sleep(0.2)
-# mout3 = ser.readline().decode('ascii', errors='ignore').strip()
-# print(f"MOUT Output 3: {mout3}")
+ser.write(b'TLIMIT? D3\n')
+time.sleep(0.2)
+tlimitd3 = ser.readline().decode('ascii', errors='ignore').strip()
+print(f"TLIMIT D3: {tlimitd3}")
 
 # # Query AOUT output 4
 # ser.write(b'AOUT? 4\n')
