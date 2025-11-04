@@ -10,8 +10,18 @@ from scipy.interpolate import interp1d
 
 class ThreeHeadCalibration:
     def __init__(self, cal_path=None):
+        # Try project directory first
+        default_project_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'gl7_calibrations', '3_head_cal.csv')
+        cwd_path = os.path.join(os.getcwd(), 'gl7_calibrations', '3_head_cal.csv')
         if cal_path is None:
-            cal_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'gl7_calibrations', '3_head_cal.csv')
+            if os.path.exists(cwd_path):
+                cal_path = cwd_path
+            elif os.path.exists(default_project_path):
+                cal_path = default_project_path
+            else:
+                # Print debug info and raise error with both paths
+                print(f"Calibration file not found. Tried: {cwd_path} and {default_project_path}")
+                raise FileNotFoundError(f"Calibration file not found. Tried: {cwd_path} and {default_project_path}")
         self.resistances = []
         self.temperatures = []
         with open(cal_path, 'r') as f:
