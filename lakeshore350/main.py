@@ -5,6 +5,7 @@ Main interface for Lakeshore350 Driver
 # Requires outputs.py, temperature.py, head3_calibration.py, head4_calibration.py, pumps_calibration.py, lakeshore_display.py
 import argparse
 import serial
+import importlib.util
 from .temperature import TemperatureReader
 from .head3_calibration import convert_3head_resistance_to_temperature
 from .head4_calibration import convert_4head_resistance_to_temperature
@@ -16,7 +17,7 @@ def main():
     parser = argparse.ArgumentParser(description="Lakeshore 350 Temperature Controller")
     parser.add_argument("--all", action="store_true", help="Read all inputs (A-D), scanner inputs (D2-D5), and all channels (1-8)")
     parser.add_argument("--info", action="store_true", help="Get device information")
-
+    parser.add_argument("--run-gl7", metavar='CSV_FILE', help="Run GL7 infrastructure with CSV file")
     
     # Output control arguments (replaces heater control)
     parser.add_argument("--outputs-query", type=int, metavar='OUTPUT', help="Query output status: --outputs-query <output_num>")
@@ -35,11 +36,20 @@ def main():
     
     args = parser.parse_args()
 
+    if args.run_gl7:
+        spec = importlib.util.spec_from_file_location("run_gl7", "/home/kids/lakeshore350-python/lakeshore350/run_gl7.py")
+        run_gl7 = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(run_gl7)
+        # Pass the CSV file path to run_gl7
+        if hasattr(run_gl7, 'main'):
+            run_gl7.main(args.run_gl7)
+        return
+
     try:
         port = "/dev/ttyUSB2"
         temp_reader = TemperatureReader(port=port)
 
-        # Reads lakeshore 350 hardware info 
+        # Reads hardware info 
         if args.info:
             print("Device Information:")
             import time
@@ -102,7 +112,7 @@ def main():
 
             print("\nSpecial Inputs:")
             d1_voltage = temp_reader.read_sensor('D1')
-            d2_temp = temp_reader.read_temperature('D2')
+            d2_voltage = temp_reader.read_sensor('D2')
             d3_temp = temp_reader.read_temperature('D3')
             d4_voltage = temp_reader.read_sensor('D4')
             d5_voltage = temp_reader.read_sensor('D5')
@@ -111,16 +121,12 @@ def main():
             from .panel_display import get_display_name
             
             d1_display = get_display_name(port=port, input_name='D1') or 'Empty'
-            d2_display = get_display_name(port=port, input_name='D2') or '50K'
+            d2_display = get_display_name(port=port, input_name='D2') or '4-Pump Switch'
             d3_display = get_display_name(port=port, input_name='D3') or '4K'
             d4_display = get_display_name(port=port, input_name='D4') or '3-pump'
             d5_display = get_display_name(port=port, input_name='D5') or '4-pump'
             d1_name = f"Input D1 ({d1_display})"
-            
-            if 'stage' in d2_display.lower() or d2_display.lower().endswith('k'):
-                d2_name = f"Input D2 ({d2_display})"
-            else:
-                d2_name = f"Input D2 ({d2_display} Stage)"
+            d2_name = f"Input D2 ({d2_display})"
             d3_name = f"Input D3 ({d3_display})"
             d4_name = f"Input D4 ({d4_display})"
             d5_name = f"Input D5 ({d5_display})"
@@ -134,11 +140,15 @@ def main():
                     print(f"  {d1_name}: {d1_voltage:.4f} V → None")
             else:
                 print(f"  {d1_name}: {d1_voltage}")
-            # D2
-            if isinstance(d2_temp, float):
-                print(f"  {d2_name}: {d2_temp:.3f} K")
+            # D2 (Switch, print raw value before conversion)
+            if isinstance(d2_voltage, float):
+                d2_temp = voltage_to_temperature(d2_voltage)
+                if d2_temp is not None:
+                    print(f"  {d2_name}: {d2_voltage:.4f} V → {d2_temp:.3f} K")
+                else:
+                    print(f"  {d2_name}: {d2_voltage:.4f} V → None")
             else:
-                print(f"  {d2_name}: {d2_temp}")
+                print(f"  {d2_name}: {d2_voltage}")
             # D3
             if isinstance(d3_temp, float):
                 print(f"  {d3_name}: {d3_temp:.3f} K")
@@ -162,8 +172,6 @@ def main():
                     print(f"  {d5_name}: {d5_voltage:.4f} V → None")
             else:
                 print(f"  {d5_name}: {d5_voltage}")
-
-        # Outputs (heaters and switches
         # Connects to outputs.py 
         # Output 1: 4-pump heater, Output2: 3-pump heater, Output 3: 4 switch, Output 4: 3 switch
         if (
@@ -172,6 +180,7 @@ def main():
             args.outputs_set_range is not None
         ):
             output_ctrl = OutputController(port=port)
+            # ...existing code...
             if args.outputs_query is not None:
                 output_ctrl.query_outputs(args.outputs_query)
             if args.outputs_query_all:

@@ -12,11 +12,11 @@ Main Functions:
 
 Lakeshore Hardware:
 - Input A (3-head resistance thermometer, requires calibration in software)
-- Input B (1K GGG, not sure what kind of thermometry)
+- Input B (Empty)
 - Input C (4-head resistance thermometer, requires calibration in software)
-- Channel D1 (Film-burner diode, not currently using)
-- Channel D2 (4K stage diode, calibrated directly on the lakeshore, curve 21)
-- Channel D3 (50K stage diode, calibrated directly on the lakeshore, curve 22, not working rn)
+- Channel D1 (Empty)
+- Channel D2 Switches (currently 4-switch)
+- Channel D3 (4K stage diode, calibrated directly on the lakeshore, curve 21
 - Channel D4 (3-pump diode, requires calibration in software)
 - Channel D5 (4-pump diode, requires calibration in software )
 
