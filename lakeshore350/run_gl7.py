@@ -137,13 +137,42 @@ def monitor_and_control_pumps(output_ctrl, csv_path, stop_event):
     current_power_output2 = OUTPUT2_TARGET_PERCENT  # 3-pump heater
     
     log_print(f"Starting dual pump temperature monitoring:")
-    log_print(f"  3_Pump target: {TARGET_3PUMP_TEMP_MIN}-{TARGET_3PUMP_TEMP_MAX}K (Output 2, ideal <{TARGET_3PUMP_TEMP_IDEAL}K) - ramping to {OUTPUT2_TARGET_PERCENT}%")
-    log_print(f"  4_Pump target: {TARGET_4PUMP_TEMP_MIN}-{TARGET_4PUMP_TEMP_MAX}K (Output 1, ideal <{TARGET_4PUMP_TEMP_IDEAL}K) - ramping to {OUTPUT1_TARGET_PERCENT}%")
+    log_print(f"  3_Pump target: {TARGET_3PUMP_TEMP_MIN}-{TARGET_3PUMP_TEMP_MAX}K (Output 2, ideal <{TARGET_3PUMP_TEMP_IDEAL}K)")
+    log_print(f"  4_Pump target: {TARGET_4PUMP_TEMP_MIN}-{TARGET_4PUMP_TEMP_MAX}K (Output 1, ideal <{TARGET_4PUMP_TEMP_IDEAL}K)")
     log_print(f"  Check interval: {TEMP_CHECK_INTERVAL} seconds")
+    
+    pumps_in_range = False
     
     while not stop_event.is_set():
         temp_3pump = get_current_temp_from_csv(csv_path, "3_Pump_Temp_K")
         temp_4pump = get_current_temp_from_csv(csv_path, "4_Pump_Temp_K")
+        
+        # Check if both pumps are in their target ranges
+        pump3_in_range = (temp_3pump is not None and 
+                         TARGET_3PUMP_TEMP_MIN <= temp_3pump <= TARGET_3PUMP_TEMP_MAX)
+        pump4_in_range = (temp_4pump is not None and 
+                         TARGET_4PUMP_TEMP_MIN <= temp_4pump <= TARGET_4PUMP_TEMP_MAX)
+        
+        if pump3_in_range and pump4_in_range and not pumps_in_range:
+            pumps_in_range = True
+            log_print("Both pumps have reached their target temperature ranges!")
+            log_print(f"  3_Pump: {temp_3pump:.2f}K (target: {TARGET_3PUMP_TEMP_MIN}-{TARGET_3PUMP_TEMP_MAX}K)")
+            log_print(f"  4_Pump: {temp_4pump:.2f}K (target: {TARGET_4PUMP_TEMP_MIN}-{TARGET_4PUMP_TEMP_MAX}K)")
+        
+        # Log current status every check
+        status_msg = f"Pump temps - 3Pump: "
+        if temp_3pump is not None:
+            status_msg += f"{temp_3pump:.2f}K ({'✓' if pump3_in_range else '✗'}), "
+        else:
+            status_msg += "No data, "
+            
+        status_msg += f"4Pump: "
+        if temp_4pump is not None:
+            status_msg += f"{temp_4pump:.2f}K ({'✓' if pump4_in_range else '✗'})"
+        else:
+            status_msg += "No data"
+            
+        log_print(status_msg)
         
         # Control 3_Pump (Output 2)
         if temp_3pump is not None and temp_3pump >= TARGET_3PUMP_TEMP_MIN:
@@ -190,6 +219,8 @@ def monitor_and_control_pumps(output_ctrl, csv_path, stop_event):
                         log_print(f"Error adjusting Output 1: {e}")
         
         time.sleep(TEMP_CHECK_INTERVAL)
+    
+    return pumps_in_range
 
 def query_output_brief(output_ctrl, output_num):
     """Query output and print only MOUT and HTR/AOUT lines"""
@@ -279,14 +310,24 @@ def ramp_output(output_ctrl, output_num, target_percent, duration_minutes):
         if step < steps:  # Don't wait after the last step
             time.sleep(step_duration)
 
-def monitor_head_stabilization(csv_path, stop_event):
+def monitor_head_stabilization(csv_path, stop_event, wait_for_pumps_event):
     """Monitor 3_Head and 4_Head temperatures and detect when they stabilize"""
     head3_readings = []
     head4_readings = []
     
     log_print("Starting head temperature stabilization monitoring...")
+    log_print(f"  Waiting for pumps to reach target ranges before checking head stability...")
     log_print(f"  Stabilization criteria: {HEAD_STABILIZATION_TOLERANCE}K change over {HEAD_STABILIZATION_WINDOW} readings")
     log_print(f"  Check interval: {HEAD_CHECK_INTERVAL} seconds")
+    
+    # Wait for pumps to reach target ranges
+    while not wait_for_pumps_event.is_set() and not stop_event.is_set():
+        time.sleep(1)
+    
+    if stop_event.is_set():
+        return False
+        
+    log_print("Pumps are in target ranges - now monitoring head stabilization...")
     
     while not stop_event.is_set():
         temp_3head = get_current_temp_from_csv(csv_path, "3_Head_Temp_K")
@@ -319,6 +360,9 @@ def monitor_head_stabilization(csv_path, stop_event):
             head3_change = abs(max(head3_readings) - min(head3_readings))
             head4_change = abs(max(head4_readings) - min(head4_readings))
             log_print(f"Head temps - 3Head: {temp_3head:.3f}K (change: {head3_change:.3f}K, stable: {head3_stable}), 4Head: {temp_4head:.3f}K (change: {head4_change:.3f}K, stable: {head4_stable})")
+        else:
+            # Still collecting initial readings
+            log_print(f"Head temps - 3Head: {temp_3head:.3f}K, 4Head: {temp_4head:.3f}K (collecting readings: {len(head3_readings)}/{HEAD_STABILIZATION_WINDOW})")
         
         time.sleep(HEAD_CHECK_INTERVAL)
     
@@ -411,27 +455,7 @@ def pump_heating(csv_path):
     port = "/dev/ttyUSB2"
     output_ctrl = OutputController(port=port)
     
-    # Create stop events for different monitoring threads
-    pump_monitor_stop = threading.Event()
-    head_monitor_stop = threading.Event()
-    
-    # Start dual pump temperature monitoring thread
-    pump_monitor_thread = threading.Thread(
-        target=monitor_and_control_pumps, 
-        args=(output_ctrl, csv_path, pump_monitor_stop)
-    )
-    pump_monitor_thread.daemon = True
-    pump_monitor_thread.start()
-    
-    # Start head temperature stabilization monitoring thread
-    head_monitor_thread = threading.Thread(
-        target=monitor_head_stabilization,
-        args=(csv_path, head_monitor_stop)
-    )
-    head_monitor_thread.daemon = True
-    head_monitor_thread.start()
-    
-    # Ramp outputs simultaneously
+    # Ramp outputs simultaneously first
     thread1 = threading.Thread(target=ramp_output, args=(output_ctrl, 1, OUTPUT1_TARGET_PERCENT, OUTPUT1_RAMP_TIME_MINUTES))
     thread2 = threading.Thread(target=ramp_output, args=(output_ctrl, 2, OUTPUT2_TARGET_PERCENT, OUTPUT2_RAMP_TIME_MINUTES))
     
@@ -442,7 +466,62 @@ def pump_heating(csv_path):
     thread2.join()
     
     log_print("Initial pump heating sequence completed.")
-    log_print("Monitoring pump temperatures and head stabilization... Press Ctrl+C to stop.")
+    log_print("Waiting for pumps to reach minimum temperatures...")
+    log_print(f"  3_Pump must reach at least {TARGET_3PUMP_TEMP_MIN}K")
+    log_print(f"  4_Pump must reach at least {TARGET_4PUMP_TEMP_MIN}K")
+    
+    # Wait for pumps to reach minimum temperatures
+    pumps_reached_minimums = False
+    try:
+        while not pumps_reached_minimums:
+            temp_3pump = get_current_temp_from_csv(csv_path, "3_Pump_Temp_K")
+            temp_4pump = get_current_temp_from_csv(csv_path, "4_Pump_Temp_K")
+            
+            # Check if both pumps are at minimum temperatures
+            pump3_at_min = (temp_3pump is not None and temp_3pump >= TARGET_3PUMP_TEMP_MIN)
+            pump4_at_min = (temp_4pump is not None and temp_4pump >= TARGET_4PUMP_TEMP_MIN)
+            
+            if pump3_at_min and pump4_at_min:
+                pumps_reached_minimums = True
+                log_print("Both pumps have reached minimum temperatures!")
+                log_print(f"  3_Pump: {temp_3pump:.2f}K (min: {TARGET_3PUMP_TEMP_MIN}K)")
+                log_print(f"  4_Pump: {temp_4pump:.2f}K (min: {TARGET_4PUMP_TEMP_MIN}K)")
+                break
+            
+            # Log current status with detailed info
+            if temp_3pump is not None and temp_4pump is not None:
+                log_print(f"Waiting for minimums - 3Pump: {temp_3pump:.2f}K ({'✓' if pump3_at_min else f'✗ need {TARGET_3PUMP_TEMP_MIN}K'}), 4Pump: {temp_4pump:.2f}K ({'✓' if pump4_at_min else f'✗ need {TARGET_4PUMP_TEMP_MIN}K'})")
+            else:
+                log_print("Waiting for pump temperature data...")
+            
+            time.sleep(30)  # Check every 30 seconds
+            
+    except KeyboardInterrupt:
+        log_print("Manual stop requested...")
+        return
+    
+    # Now start pump temperature control and head stabilization monitoring
+    log_print("Starting pump temperature control and head stabilization monitoring...")
+    
+    # Create stop events
+    pump_monitor_stop = threading.Event()
+    head_monitor_stop = threading.Event()
+    
+    # Start pump temperature monitoring/control thread
+    pump_monitor_thread = threading.Thread(
+        target=monitor_and_control_pumps, 
+        args=(output_ctrl, csv_path, pump_monitor_stop)
+    )
+    pump_monitor_thread.daemon = True
+    pump_monitor_thread.start()
+    
+    # Start head temperature stabilization monitoring thread (with detailed logging)
+    head_monitor_thread = threading.Thread(
+        target=monitor_head_stabilization_detailed,
+        args=(csv_path, head_monitor_stop)
+    )
+    head_monitor_thread.daemon = True
+    head_monitor_thread.start()
     
     stabilization_achieved = False
     
@@ -508,6 +587,87 @@ def pump_heating(csv_path):
         log_print("Head stabilization not achieved - skipping switch heating sequence.")
     
     log_print("GL7 calibration sequence completed.")
+
+def monitor_head_stabilization_detailed(csv_path, stop_event):
+    """Monitor 3_Head and 4_Head temperatures with detailed logging"""
+    head3_readings = []
+    head4_readings = []
+    
+    log_print("Starting head temperature stabilization monitoring...")
+    log_print(f"  Stabilization criteria: {HEAD_STABILIZATION_TOLERANCE}K change over {HEAD_STABILIZATION_WINDOW} readings")
+    log_print(f"  Check interval: {HEAD_CHECK_INTERVAL} seconds")
+    
+    while not stop_event.is_set():
+        # Get current temperatures
+        temp_3head = get_current_temp_from_csv(csv_path, "3_Head_Temp_K")
+        temp_4head = get_current_temp_from_csv(csv_path, "4_Head_Temp_K")
+        temp_3pump = get_current_temp_from_csv(csv_path, "3_Pump_Temp_K")
+        temp_4pump = get_current_temp_from_csv(csv_path, "4_Pump_Temp_K")
+        
+        # Always log pump temps during head monitoring
+        pump_status = f"Pump temps during head monitoring - "
+        if temp_3pump is not None:
+            pump3_in_range = TARGET_3PUMP_TEMP_MIN <= temp_3pump <= TARGET_3PUMP_TEMP_MAX
+            pump_status += f"3Pump: {temp_3pump:.2f}K ({'✓' if pump3_in_range else '✗'}), "
+        else:
+            pump_status += "3Pump: No data, "
+            
+        if temp_4pump is not None:
+            pump4_in_range = TARGET_4PUMP_TEMP_MIN <= temp_4pump <= TARGET_4PUMP_TEMP_MAX
+            pump_status += f"4Pump: {temp_4pump:.2f}K ({'✓' if pump4_in_range else '✗'})"
+        else:
+            pump_status += "4Pump: No data"
+            
+        log_print(pump_status)
+        
+        if temp_3head is not None:
+            head3_readings.append(temp_3head)
+            # Keep only the last N readings for stability check
+            if len(head3_readings) > HEAD_STABILIZATION_WINDOW:
+                head3_readings.pop(0)
+        
+        if temp_4head is not None:
+            head4_readings.append(temp_4head)
+            # Keep only the last N readings for stability check
+            if len(head4_readings) > HEAD_STABILIZATION_WINDOW:
+                head4_readings.pop(0)
+        
+        # Check if both heads have stabilized (with detailed logging)
+        head3_stable = False
+        head4_stable = False
+        
+        if len(head3_readings) >= HEAD_STABILIZATION_WINDOW:
+            head3_change = abs(max(head3_readings) - min(head3_readings))
+            head3_trend = head3_readings[0] - head3_readings[-1]  # Positive if decreasing
+            head3_stable = (head3_change <= HEAD_STABILIZATION_TOLERANCE and 
+                           head3_trend <= HEAD_STABILIZATION_TOLERANCE)
+            
+            log_print(f"3_Head analysis: temp={temp_3head:.3f}K, change={head3_change:.3f}K, trend={head3_trend:.3f}K, stable={head3_stable}")
+            log_print(f"  Readings: {[f'{r:.3f}' for r in head3_readings]}")
+        else:
+            log_print(f"3_Head: collecting readings ({len(head3_readings)}/{HEAD_STABILIZATION_WINDOW}) - current: {temp_3head:.3f}K")
+            
+        if len(head4_readings) >= HEAD_STABILIZATION_WINDOW:
+            head4_change = abs(max(head4_readings) - min(head4_readings))
+            head4_trend = head4_readings[0] - head4_readings[-1]  # Positive if decreasing
+            head4_stable = (head4_change <= HEAD_STABILIZATION_TOLERANCE and 
+                           head4_trend <= HEAD_STABILIZATION_TOLERANCE)
+            
+            log_print(f"4_Head analysis: temp={temp_4head:.3f}K, change={head4_change:.3f}K, trend={head4_trend:.3f}K, stable={head4_stable}")
+            log_print(f"  Readings: {[f'{r:.3f}' for r in head4_readings]}")
+        else:
+            log_print(f"4_Head: collecting readings ({len(head4_readings)}/{HEAD_STABILIZATION_WINDOW}) - current: {temp_4head:.3f}K")
+        
+        if head3_stable and head4_stable:
+            log_print("Both 3_Head and 4_Head temperatures have stabilized!")
+            log_print(f"  3_Head final temp: {temp_3head:.3f}K")
+            log_print(f"  4_Head final temp: {temp_4head:.3f}K")
+            return True  # Signal that stabilization is complete
+        
+        log_print("---")
+        time.sleep(HEAD_CHECK_INTERVAL)
+    
+    return False
 
 def main(csv_file=None):
     log_path = setup_logging()
