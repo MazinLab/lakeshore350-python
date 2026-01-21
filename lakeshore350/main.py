@@ -16,7 +16,7 @@ from .outputs import OutputController
 def main():
     parser = argparse.ArgumentParser(description="Lakeshore 350 Temperature Controller")
     parser.add_argument("--all", action="store_true", help="Read all inputs (A-D), scanner inputs (D2-D5), and all channels (1-8)")
-    parser.add_argument("--info", action="store_true", help="Get device information")
+    parser.add_argument("--info", action="store_true", help="Get device information (*IDN?)")
     parser.add_argument("--run-gl7", metavar='CSV_FILE', help="Run GL7 infrastructure with CSV file")
     
     # Output control arguments (replaces heater control)
@@ -26,14 +26,15 @@ def main():
     parser.add_argument("--outputs-set-params", nargs="?", const=True, metavar='PARAMS', help="Set output parameters: --outputs-set-params [<output_num,param1,param2,...>")
     parser.add_argument("--outputs-set-range", nargs=2, metavar=('OUTPUT', 'RANGE'), help="Set heater range: --outputs-set-range <output_num> <range_val>")
 
-
     # Display control arguments
     parser.add_argument("--display", action="store_true", help="Check Lakeshore 350 front panel display status")
     parser.add_argument("--display-show", metavar='INPUT', help="Show panel display INNAME for a specific input (e.g. A or D1)")
     parser.add_argument("--display-show-all", action='store_true', help="Show INNAME for all known inputs")
     parser.add_argument("--display-set-name", nargs='+', metavar=('INPUT','NAME'), help='Set panel display name: --display-set-name <INPUT> "<NAME>" ')
 
-    
+    # Raw command - updated to match Lake Shore 370 syntax
+    parser.add_argument("--raw-command", nargs='+', help="Send raw command to device (multiple terms joined with spaces)")
+
     args = parser.parse_args()
 
     if args.run_gl7:
@@ -49,9 +50,20 @@ def main():
         port = "/dev/ttyUSB2"
         temp_reader = TemperatureReader(port=port)
 
+        # Raw command execution - updated to match Lake Shore 370 syntax
+        if args.raw_command:
+            command = ' '.join(args.raw_command)
+            print(f"Connected to Lakeshore 350 on {port} at 57600 baud")
+            print(f"Command: {command}")
+            response = temp_reader.send_command(command)
+            print(f"Response: {response}")
+            print("Lakeshore 350 connection closed")
+            return
+
         # Reads hardware info 
         if args.info:
             print("Device Information:")
+            print("Command: *IDN?")
             import time
             ser = serial.Serial(port='/dev/ttyUSB2', baudrate=57600, bytesize=7, parity='O', stopbits=1, timeout=2)
             ser.write(b'*IDN?\n')
@@ -60,6 +72,8 @@ def main():
             print(f"  {info if info else 'No response'}")
             ser.close()
             print()
+            print("Note: For raw commands, use: lakeshore350 --raw-command *IDN?")
+            print("      (no quotes needed, arguments are joined with spaces)")
 
         # Prints all channels (temps and/or resistance/voltage)
         if args.all:
