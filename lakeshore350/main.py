@@ -80,7 +80,7 @@ def main():
             print("Inputs:")
             # Only read A, B, C
             temp_a = temp_reader.read_temperature('A')
-            temp_b = temp_reader.read_temperature('B')
+            temp_b = temp_reader.read_sensor('B')
             temp_c = temp_reader.read_temperature('C')
 
             # try to get display names for A-C from the front panel
@@ -104,9 +104,9 @@ def main():
             else:
                 print(f"  {a_label}: {temp_a}")
 
-            # Input B prints direct temperature
+            # Input B prints resistance
             if isinstance(temp_b, float):
-                print(f"  {b_label}: {temp_b:.3f} K")
+                print(f"  {b_label}: {temp_b:.4f} Ω")
             else:
                 print(f"  {b_label}: {temp_b}") # Print w/out formatting for non number
 
@@ -125,7 +125,7 @@ def main():
 
 
             print("\nSpecial Inputs:")
-            d1_voltage = temp_reader.read_sensor('D1')
+            d1_resistance = temp_reader.read_sensor('D1')
             d2_voltage = temp_reader.read_sensor('D2')
             d3_temp = temp_reader.read_temperature('D3')
             d4_voltage = temp_reader.read_sensor('D4')
@@ -146,14 +146,10 @@ def main():
             d5_name = f"Input D5 ({d5_display})"
 
             # D1
-            if isinstance(d1_voltage, float):
-                d1_temp = voltage_to_temperature(d1_voltage)
-                if d1_temp is not None:
-                    print(f"  {d1_name}: {d1_voltage:.4f} V → {d1_temp:.3f} K")
-                else:
-                    print(f"  {d1_name}: {d1_voltage:.4f} V → None")
+            if isinstance(d1_resistance, float):
+                print(f"  {d1_name}: {d1_resistance:.4f} Ω")
             else:
-                print(f"  {d1_name}: {d1_voltage}")
+                print(f"  {d1_name}: {d1_resistance}")
             # D2 (Switch, print raw value before conversion)
             if isinstance(d2_voltage, float):
                 d2_temp = voltage_to_temperature(d2_voltage)
