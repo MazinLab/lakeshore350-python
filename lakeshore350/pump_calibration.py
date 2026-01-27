@@ -12,8 +12,11 @@ from scipy.interpolate import interp1d
 import numpy as np
 
 class PumpCalibration:
-    def __init__(self, calibration_file='pumps_switches_cal.csv'):
+    def __init__(self, calibration_file=None):
         """Initialize the pump calibration with data from CSV file"""
+        # Use absolute path if not provided
+        if calibration_file is None:
+            calibration_file = '/home/kids/lakeshore350-python/gl7_calibrations/pumps_switches_cal.csv'
         self.calibration_file = calibration_file
         self.temperatures = []
         self.voltages = []
@@ -23,16 +26,12 @@ class PumpCalibration:
     
     def _load_calibration_data(self):
         """Load calibration data from CSV file"""
-        # Get the directory of this script, then go to calibration directory
-        script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        cal_file_path = os.path.join(script_dir, "calibration", self.calibration_file)
-        
+        cal_file_path = self.calibration_file
         try:
             with open(cal_file_path, 'r') as file:
                 reader = csv.reader(file)
                 # Skip header row
                 next(reader)
-                
                 for row in reader:
                     if len(row) >= 2 and row[0].strip() and row[1].strip():
                         try:
@@ -41,9 +40,7 @@ class PumpCalibration:
                             self.temperatures.append(temp)
                             self.voltages.append(voltage)
                         except ValueError:
-                            # Skip rows with invalid data
                             continue
-            
         except FileNotFoundError:
             raise FileNotFoundError(f"Pump calibration file not found: {cal_file_path}")
         except Exception as e:
